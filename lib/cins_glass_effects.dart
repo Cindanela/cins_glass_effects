@@ -5,3 +5,4 @@ library;
 
 export 'src/optics/glass_quality.dart';
 export 'src/optics/glass_capabilities.dart';
+export 'src/optics/glass_render_path.dart';
