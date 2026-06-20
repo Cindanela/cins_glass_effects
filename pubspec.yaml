@@ -1,7 +1,7 @@
 name: cins_glass_effects
-description: "A new Flutter package project."
+description: "A Flutter package that provides a collection of glass effects for your Flutter applications. This package includes various glass effects that can be easily integrated into your Flutter projects to create visually appealing and modern user interfaces."
 version: 0.0.1
-homepage:
+homepage: https://github.com/Cindanela/cins_glass_effects
 
 environment:
   sdk: ^3.12.0

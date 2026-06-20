@@ -11,12 +11,16 @@ and the Flutter guide for
 [developing packages and plugins](https://flutter.dev/to/develop-packages).
 -->
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+A Flutter package that provides a collection of glass effects for your Flutter applications. This package includes various glass effects that can be easily integrated into your Flutter projects to create visually appealing and modern user interfaces.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+### Types of Glass Effects
+#### Current
+None
+#### Planned
+Opaque, Frosted/Frosted Glass, Clear/Glass, Smoked/Tinted, Textured/Reeded, Liquid Glass, Frosted with Grain/Noise, Crystalline/Faceted, Wet Glass/Condensation, Neumorphic Glass, Beveled Glass, Holographic/Iridescent, Specular/Glossy, Bubble Glass, Stained Glass, Acrylic
+
 
 ## Getting started
 
