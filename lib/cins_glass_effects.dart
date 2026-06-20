@@ -4,3 +4,4 @@
 library;
 
 export 'src/optics/glass_quality.dart';
+export 'src/optics/glass_capabilities.dart';
