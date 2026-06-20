@@ -82,21 +82,21 @@ void main() {
 library;
 ```
 
-- [ ] **Step 4: Write a smoke test** at `test/barrel_test.dart`
+- [ ] **Step 4: Verify scaffold** (this is a config/scaffold task — verified by tooling, not a unit
+  test; do NOT add an empty placeholder test). Run, expecting clean output:
 
-```dart
-import 'package:cins_glass_effects/cins_glass_effects.dart';
-import 'package:flutter_test/flutter_test.dart';
-
-void main() {
-  test('package imports without error', () {
-    expect(true, isTrue);
-  });
-}
+```
+flutter pub get
+flutter analyze
 ```
 
-- [ ] **Step 5: Run** `flutter pub get && flutter test test/barrel_test.dart` — Expected: PASS.
-- [ ] **Step 6: Commit** — `git add -A && git commit -m "chore: scaffold package + shader asset wiring"`
+Expected: `pub get` resolves; `flutter analyze` reports "No issues found!". Also confirm
+`shaders/glass.frag` exists and `pubspec.yaml` lists it under `flutter: shaders:`.
+
+> Note: `flutter test` is intentionally NOT run here — there are no tests yet (the first unit test
+> arrives in Task 2). Real test coverage begins next task.
+
+- [ ] **Step 5: Commit** — `git add -A && git commit -m "chore: scaffold package + shader asset wiring"`
 
 ---
 
