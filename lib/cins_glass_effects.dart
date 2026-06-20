@@ -1,5 +1,4 @@
-/// cins_glass_effects
+/// cins_glass_effects — turn any widget or shape into real glass.
 ///
-/// Public API barrel for the package. Glass-effect widgets are implemented
-/// under `lib/src/` and re-exported here. No effects exist yet — see CLAUDE.md.
+/// Public API is re-exported here; implementations live in `lib/src/`.
 library;
