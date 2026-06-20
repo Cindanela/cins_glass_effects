@@ -95,7 +95,6 @@ class GlassMaterial {
       cornerRadius,
       edgeWidth,
       yFlip,
-      blurSigma,
     ]);
   }
 

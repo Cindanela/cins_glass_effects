@@ -29,7 +29,7 @@ void main() {
   test('toShaderFloats packs uniforms in declared order', () {
     final f = m.toShaderFloats(lightDir: const Offset(0.1, 0.2), cornerRadius: 24, yFlip: 1);
     // [lx, ly, refraction, chroma, specular, shininess, fresnel, r,g,b,a, corner, edge, yflip]
-    expect(f.length, 15);
+    expect(f.length, 14);
     expect(f[0], closeTo(0.1, 1e-6));   // lightDir.x  -> shader idx 2
     expect(f[1], closeTo(0.2, 1e-6));   // lightDir.y  -> idx 3
     expect(f[2], closeTo(12, 1e-6));    // refraction  -> idx 4
