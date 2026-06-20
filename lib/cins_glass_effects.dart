@@ -8,3 +8,4 @@ export 'src/geometry/glass_shape.dart';
 export 'src/optics/glass_quality.dart';
 export 'src/optics/glass_capabilities.dart';
 export 'src/optics/glass_render_path.dart';
+export 'src/materials/glass_material.dart';
