@@ -21,9 +21,20 @@ void main() {
   });
 
   test('lerp interpolates fields', () {
-    final a = const GlassMaterial(refraction: 0);
-    final b = const GlassMaterial(refraction: 10);
-    expect(GlassMaterial.lerp(a, b, 0.5).refraction, closeTo(5, 1e-6));
+    const a = GlassMaterial(
+      refraction: 0,
+      tint: Color(0x00000000),
+      edgeWidth: 10,
+    );
+    const b = GlassMaterial(
+      refraction: 10,
+      tint: Color(0xFFFFFFFF),
+      edgeWidth: 20,
+    );
+    final mid = GlassMaterial.lerp(a, b, 0.5);
+    expect(mid.refraction, closeTo(5, 1e-6));
+    expect(mid.edgeWidth, closeTo(15, 1e-6));
+    expect(mid.tint, Color.lerp(const Color(0x00000000), const Color(0xFFFFFFFF), 0.5));
   });
 
   test('toShaderFloats packs uniforms in declared order', () {
