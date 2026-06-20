@@ -3,6 +3,7 @@
 /// Public API is re-exported here; implementations live in `lib/src/`.
 library;
 
+export 'src/geometry/shape_sdf.dart';
 export 'src/optics/glass_quality.dart';
 export 'src/optics/glass_capabilities.dart';
 export 'src/optics/glass_render_path.dart';
