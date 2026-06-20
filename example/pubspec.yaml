@@ -1,0 +1,17 @@
+name: cins_glass_effects_example
+description: Visual gallery for cins_glass_effects.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.12.0
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cins_glass_effects:
+    path: ../
+
+flutter:
+  uses-material-design: true
