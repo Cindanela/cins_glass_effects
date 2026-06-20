@@ -2,3 +2,5 @@
 ///
 /// Public API is re-exported here; implementations live in `lib/src/`.
 library;
+
+export 'src/optics/glass_quality.dart';
