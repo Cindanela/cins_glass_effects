@@ -9,15 +9,50 @@ for publication to pub.dev. Its goal is to **realistically mimic real glass** as
 Flutter widgets — not flat translucency, but physically-inspired refraction, shaders, chromatic
 aberration, and specular highlights. A camera-based mirror/reflection effect is under consideration.
 
-**Current state: greenfield / pre-implementation.** The repo was scaffolded with
-`flutter create --template=package`. The generated placeholder `Calculator` and its test have been
-removed; `lib/cins_glass_effects.dart` is the (currently empty) public barrel. No effects exist yet
-— the first real work is a brainstorming/planning session to define the architecture.
+**It is a glass *engine*, not a shape/component catalogue.** The user brings the shape (their widget,
+a custom `Path`, a generated blob); the package turns *that* shape into glass. We do **not** enumerate
+shapes. The README's "glass types" (Frosted, Reeded, Crystalline, Holographic, Bubble, embossing/
+debossing, …) are **materials / surface treatments** — parameter sets over the same engine — not
+hardcoded geometry.
 
-The README's "Planned" list captures the intended catalogue: Opaque, Frosted, Clear/Glass,
-Smoked/Tinted, Textured/Reeded, Liquid Glass, Frosted-with-Grain, Crystalline/Faceted,
-Wet Glass/Condensation, Neumorphic Glass, Beveled, Holographic/Iridescent, Specular/Glossy,
-Bubble, Stained, Acrylic.
+**Current state: working engine, pre-release (unpublished).** Implemented: `GlassContainer`, the
+`shaders/glass.frag` optics shader, the `GlassMaterial` model + `liquid`/`clear` presets, opt-in
+lighting, capability detection, and the SDF-driven shape system below. The wider material catalogue and
+true-3D surface are still to build (see Roadmap in README / `WORKLOG.md`).
+
+## Core architecture — the SDF *is* the shape API
+
+Every optical effect in `shaders/glass.frag` (refraction direction, edge band, Fresnel, specular,
+mask) is derived from **one signed-distance value `d` and its gradient**. So a shape only has to report
+its **signed distance field** and the optics follow it exactly — any silhouette, no per-shape code.
+
+- `ShapeSdf` — pure-Dart SDF primitives (`roundedRect`, `circle`), boolean ops
+  (`union`/`intersection`/`difference`/`smoothUnion`), and `polygon` (exact SDF for *any* closed
+  polygon). This is the executable twin of the GLSL SDF — **keep the two in lockstep.**
+- `GlassShape` — polymorphic: `roundedRect`, `circle`, `polygon`, arbitrary `path`, plus
+  `union`/`intersection`/`difference` combinators. Each exposes `clipPath(size)` + `sdf(p, size)`.
+- `shape_generators.dart` — maths that *generate* geometry (e.g. `harmonicBlob`, a Fourier-perturbed
+  circle) → vertices → `GlassShape.polygon` (exact SDF, fully-optical).
+
+### Why the shader "hardcodes" a shape — and the no-fallback rule
+
+A fragment shader is compiled GLSL with **fixed-size uniforms**; it can't accept a variable-length
+polygon or an arbitrary Dart function. So `glass.frag` currently hardcodes `sdRoundedBox`, and shapes
+it can't represent exactly (`shaderRepresentable == false`) route to a **shape-accurate CPU fallback**
+(correct silhouette + rim via the exact clip path; blur+tint instead of full shader refraction).
+
+Two layers, only one of which falls back:
+- **Shape math — never falls back, and is complete.** Every closed shape has an exact SDF.
+- **GPU rendering of an arbitrary SDF — the only gap.** The fix is a **baked SDF texture** (rasterize
+  the field once, sample it on-GPU) — standard, efficient, no custom engine. That milestone deletes the
+  render fallback so every custom shape gets full shader fidelity. Treat any *math*-level fallback as a
+  bug; treat the *GPU* fallback as temporary plumbing, not the intended end state.
+
+### Next axis (not built): true 3D
+
+Glass must mimic 3D even when thin. Plan: user-defined **thickness** + a **bevel/height profile `h(d)`**
+over the SDF (the edge band already yields the inward normal); **emboss/deboss** = an interior feature
+SDF that modulates that height field. Framing: "CSS for Dart, but for glass only."
 
 ## Target stack
 
@@ -28,19 +63,22 @@ Bubble, Stained, Acrylic.
 
 ## Platform strategy (priority order)
 
-1. **Mobile + tablet** (primary target).
-2. **Desktop / laptop** (secondary).
-3. **Web** (last).
+1. **Android** (primary).
+2. **iOS** (second).
+3. **Windows / Linux** (third).
+4. **Web** (last, only if possible).
 
 Aim for all platforms. Where a single implementation can't deliver the effect everywhere, it is
 acceptable to use **native-code plugins or platform-specific code paths** per device class —
 pick the implementation per platform rather than lowest-common-denominator everywhere.
 
-## Open architectural questions (resolve in brainstorming, don't assume)
+## Open architectural questions (don't assume)
 
-- Whether to ship as **one package or several** (e.g. core vs. per-effect or per-platform packages).
+- Whether to ship as **one package or several** — splitting into core + plugins/packages is acceptable
+  if it's what lets the user make any glass type in the README.
 - **Tree shaking** so apps only pay for the effects/shaders they actually use.
 - How camera-based mirror effects fit in (permissions, platform support, optional dependency).
+- The **baked-SDF-texture** shader path (removes the GPU fallback for arbitrary shapes).
 
 ## Commands
 
@@ -53,7 +91,9 @@ flutter analyze          # static analysis (lints from flutter_lints)
 dart format .            # format
 ```
 
-There is no app to run — verify work through `flutter test` / widget tests, not by launching.
+Primary verification is `flutter test` / widget tests. An `example/` gallery app exists for on-device
+**visual** checks (the optics shader needs Impeller and can't be unit-tested), but logic/geometry is
+verified by tests, not by launching.
 
 ## Conventions
 

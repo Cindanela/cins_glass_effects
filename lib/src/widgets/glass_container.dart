@@ -68,8 +68,13 @@ class _GlassContainerState extends State<GlassContainer> {
   @override
   Widget build(BuildContext context) {
     final clipper = GlassClipper(widget.shape);
+    // The analytic shader only renders shapes it can represent exactly; any
+    // other silhouette routes to the shape-accurate fallback rather than
+    // drawing a wrong outline.
     final usesShader =
-        resolveGlassRenderPath(capabilities: _caps) == GlassRenderPath.shader && _builder != null;
+        resolveGlassRenderPath(capabilities: _caps) == GlassRenderPath.shader &&
+            _builder != null &&
+            widget.shape.shaderRepresentable;
 
     if (!usesShader) {
       return ClipPath(
@@ -82,7 +87,7 @@ class _GlassContainerState extends State<GlassContainer> {
           child: CustomPaint(
             foregroundPainter: GlassFallbackOverlay(
               material: widget.material,
-              cornerRadius: widget.shape.cornerRadius,
+              shape: widget.shape,
             ),
             child: widget.child,
           ),
@@ -96,7 +101,7 @@ class _GlassContainerState extends State<GlassContainer> {
         final filter = _builder!.build(
           material: widget.material,
           lightDir: light.direction,
-          cornerRadius: widget.shape.cornerRadius,
+          cornerRadius: widget.shape.shaderCornerRadius,
           glesYFlip: widget.flipY,
         );
         return ClipPath(

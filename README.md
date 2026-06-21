@@ -114,14 +114,25 @@ Remember to `dispose()` a light source you create.
 
 ## Custom shapes
 
-Glass is clipped to a `GlassShape`, so it isn't limited to Material's shapes:
+A `GlassShape` describes the silhouette as a signed-distance field, and shapes compose, so glass isn't
+limited to Material's shapes — or to a single primitive:
 
 ```dart
-GlassContainer(shape: const GlassShape.roundedRect(40), child: /* ... */);
+// Built-ins
+GlassContainer(shape: const GlassShape.roundedRect(40), child: /* ... */); // pill: large radius
+GlassContainer(shape: const GlassShape.circle(), child: /* ... */);
+
+// Any outline
+GlassContainer(shape: GlassShape.path((size) => myPath(size)), child: /* ... */);
+
+// Compose: a bar with a hole punched in it
+final barWithHole = const GlassShape.roundedRect(24).difference(hole);
 ```
 
-Phase 1 supports rounded rectangles (any corner radius — set it large for a pill). Arbitrary `Path`
-shapes are on the [Roadmap](#roadmap).
+Use `union` / `intersection` / `difference` to combine shapes; the edge (refraction, Fresnel rim) follows
+the composed outline exactly — including the inner rim of a hole. Shapes the GPU shader can't yet render
+directly fall back to a shape-accurate CPU path, so the silhouette is always correct (full shader optics
+for arbitrary shapes are on the [Roadmap](#roadmap)).
 
 ## How it works
 

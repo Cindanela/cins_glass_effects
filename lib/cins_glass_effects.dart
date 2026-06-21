@@ -5,10 +5,12 @@ library;
 
 export 'src/geometry/shape_sdf.dart';
 export 'src/geometry/glass_shape.dart';
+export 'src/geometry/shape_generators.dart';
 export 'src/optics/glass_quality.dart';
 export 'src/optics/glass_capabilities.dart';
 export 'src/optics/glass_render_path.dart';
 export 'src/optics/glass_filter_builder.dart';
+export 'src/optics/sdf_field.dart';
 export 'src/materials/glass_material.dart';
 export 'src/materials/glass_presets.dart';
 export 'src/light/glass_light.dart';
