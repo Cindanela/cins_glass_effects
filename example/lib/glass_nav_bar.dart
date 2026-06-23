@@ -104,8 +104,11 @@ class GlassNavBar extends StatelessWidget {
                 onTap: onAdd,
                 radius: _fabSize / 2,
                 child: const Center(
-                  child: Icon(Icons.add_rounded,
-                      size: _fabIconSize, color: Colors.white),
+                  child: Icon(
+                    Icons.add_rounded,
+                    size: _fabIconSize,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
