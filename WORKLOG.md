@@ -1,5 +1,33 @@
 # Worklog
 
+## 2026-07-13 — On-device status + open issues (branch folded into main here)
+
+Verified on the Pixel: bar/FAB curves are smooth (jaggies fix works), rim + FAB-hole edge read as
+real glass. **Three visual issues remain — next session, likely in this order:**
+
+1. **Example showcase page first** (materials × shapes × animation gallery) so every following fix
+   is easy to eyeball. Hanna flips through; no more single-panel guessing.
+2. **Corner mismatch on the analytic panel** — near-certain root cause: unit mismatch. The clip
+   rounds at `cornerRadius` in *logical* px but the shader compares in *device* px (uRectSize
+   space), so the shader thinks corners are ~3× sharper than the clip on a ~3× screen. Same class
+   of issue for `edgeWidth`/`refraction`/`chromaticAberration` (docs say logical px). Fix:
+   multiply the px-valued material/shape uniforms by dpr in the builders (GlassBackdrop already
+   knows dpr), then re-tune presets if bands feel different. Verify per systematic-debugging
+   before committing to it.
+3. **Dark hairlines on the panel's left/right edges** — hypothesis: the analytic shader's own AA
+   mask fades premultiplied over the already-clipped output, double-darkening the 2 px band. The
+   SDF shader already dropped its mask (clip owns the silhouette); probably do the same in
+   `glass.frag`. Verify first.
+4. **FAB circle: doubled rim + faint rectangular seam around it** — hypotheses to test: two
+   stacked BackdropFilters (bar's + FAB's) interacting; and/or Impeller limiting the backdrop
+   coverage to the clip's bounding *rect*, visible where the FAB overlaps the already-filtered
+   bar. Needs investigation on-device; possibly compose FAB + bar into one glass shape (the
+   engine supports it: `bar.union(circle)`).
+
+Then the rest of the agreed roadmap: `GlassTheme` (defaults propagation, before any API freeze),
+material catalogue (reeded/crystalline/... as presets), camera-mirror question, true-3D axis
+(thickness + bevel `h(d)` + emboss). Pub.dev floor bump (`flutter: >=1.17.0` is boilerplate).
+
 ## 2026-07-13 — Batch 3: AnimatedGlassContainer, grain, squircle, normalizedPolygon
 
 - `AnimatedGlassContainer` (`ImplicitlyAnimatedWidget` + `GlassMaterialTween`) — the review's
