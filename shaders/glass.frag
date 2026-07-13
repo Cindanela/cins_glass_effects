@@ -14,6 +14,10 @@ layout(location = 7) uniform vec4  uTint;         // 9,10,11,12
 layout(location = 8) uniform float uCornerRadius; // 13
 layout(location = 9) uniform float uEdgeWidth;    // 14
 layout(location = 10) uniform float uIntensity;   // 15 (light intensity)
+// The backdrop input texture is the WHOLE render pass (screen), not the widget
+// bounds — the widget's rect within it must be passed in (device px).
+layout(location = 11) uniform vec2 uRectOrigin;   // 16,17
+layout(location = 12) uniform vec2 uRectSize;     // 18,19
 
 uniform sampler2D uTexture;                        // sampler 0: backdrop
 
@@ -33,8 +37,8 @@ void main() {
   uv.y = 1.0 - uv.y;
 #endif
 
-  vec2 halfSize = uSize * 0.5;
-  vec2 p = fragCoord - halfSize;
+  vec2 halfSize = uRectSize * 0.5;
+  vec2 p = fragCoord - uRectOrigin - halfSize;
   vec2 b = halfSize - vec2(1.0);
 
   float d = sdRoundedBox(p, b, uCornerRadius);      // negative inside

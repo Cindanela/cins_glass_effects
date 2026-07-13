@@ -20,6 +20,12 @@ Initial development work (Phase 0 + Phase 1): the real-glass rendering engine an
   builder closures per build no longer re-clip (or re-bake) every frame.
 
 ### Fixed
+- **Both shader paths rendered the shape over the whole screen** instead of the widget. Root
+  cause (verified in the Impeller engine source): a backdrop filter's input texture is the whole
+  render pass — the clip only bounds the output — so `uSize`-derived geometry was screen-sized.
+  On device this washed out custom shapes entirely and hid the analytic path's edge optics. The
+  shaders now take the widget's rect (`uRectOrigin`/`uRectSize`), injected at paint time by a new
+  `GlassBackdrop` render object that measures its own on-screen position in device pixels.
 - `GlassFilterBuilder` now creates **one** `FragmentShader` for its lifetime and only updates
   uniforms per frame (previously it allocated a new shader every build — jank + GPU-state leak —
   and never disposed them). `GlassContainer` disposes the builder with its state.

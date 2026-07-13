@@ -33,16 +33,16 @@ void main() {
   test('uniform packing matches the shader layout (2 floats reserved for uSize)',
       () async {
     final builder = await loadForTest();
-    // Smoke check: setting all uniforms on the real compiled shader must not
-    // range-error, proving Dart-side packing agrees with glass.frag.
-    final floats = GlassMaterials.liquid.toShaderFloats(
-      lightDir: const ui.Offset(-0.5, -0.7),
-      lightIntensity: 1,
+    // Setting every uniform (material + widget rect) on the real compiled
+    // shader must not range-error, proving Dart-side packing agrees with
+    // glass.frag. The rect is needed because the backdrop input texture is
+    // the whole render pass, not the widget bounds.
+    builder.debugSetUniforms(
+      material: GlassMaterials.liquid,
+      light: GlassLight.topLeft,
       cornerRadius: 28,
+      deviceRect: const ui.Rect.fromLTWH(90, 150, 360, 240),
     );
-    for (var i = 0; i < floats.length; i++) {
-      builder.debugShader.setFloat(i + 2, floats[i]);
-    }
     builder.dispose();
   });
 
@@ -62,17 +62,15 @@ void main() {
       final texture = (await tester.runAsync(field.toImage))!;
       addTearDown(texture.dispose);
 
-      final floats = GlassMaterials.liquid.toSdfShaderFloats(
-        lightDir: const ui.Offset(-0.5, -0.7),
-        lightIntensity: 1,
+      // Sets all floats and binds the baked field as sampler 1 (sampler 0 is
+      // the backdrop, engine-bound at filter time). Must not range-error.
+      builder!.debugSetUniforms(
+        material: GlassMaterials.liquid,
+        light: GlassLight.topLeft,
+        sdfTexture: texture,
         sdfRangePx: field.spread * 2,
+        deviceRect: const ui.Rect.fromLTWH(90, 150, 360, 240),
       );
-      for (var i = 0; i < floats.length; i++) {
-        builder!.debugShader.setFloat(i + 2, floats[i]);
-      }
-      // Sampler 0 is the backdrop (engine-bound at filter time); the baked
-      // field is sampler 1.
-      builder!.debugShader.setImageSampler(1, texture);
       builder.dispose();
       expect(builder.debugShader.debugDisposed, isTrue);
     });

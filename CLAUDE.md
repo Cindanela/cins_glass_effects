@@ -45,6 +45,12 @@ polygon or an arbitrary Dart function. So there are two shader variants with an 
 bakes any `GlassShape.sdf` into that texture; `SdfTextureCache` owns one bake per (shape, size) and
 serves a stale texture during resizes so glass never flashes back to the fallback.
 
+**Backdrop geometry gotcha (verified in Impeller source):** a backdrop filter's input texture is the
+**whole render pass** (screen) — the clip only bounds the output. So both shaders take the widget's
+rect as uniforms (`uRectOrigin`/`uRectSize`, device px), injected at paint time by `GlassBackdrop`
+(custom render object, `localToGlobal × dpr`). Never derive shape geometry from `uSize` — it's the
+snapshot size, not the widget size.
+
 - **Shape math — never falls back, and is complete.** Every closed shape has an exact SDF.
 - **The blur+tint fallback remains only for**: backends without `ImageFilter.shader` (web, currently
   desktop), and `GlassShape.path` without an `sdfFn` (`hasSdf == false`). Treat any *math*-level

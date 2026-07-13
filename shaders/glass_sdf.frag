@@ -19,6 +19,10 @@ layout(location = 7) uniform vec4  uTint;         // 9,10,11,12
 layout(location = 8) uniform float uEdgeWidth;    // 13
 layout(location = 9) uniform float uIntensity;    // 14 (light intensity)
 layout(location = 10) uniform float uSdfRange;    // 15 (px spanned by [-1,1] decode)
+// The backdrop input texture is the WHOLE render pass (screen), not the widget
+// bounds — the widget's rect within it must be passed in (device px).
+layout(location = 11) uniform vec2 uRectOrigin;   // 16,17
+layout(location = 12) uniform vec2 uRectSize;     // 18,19
 
 uniform sampler2D uTexture;                        // sampler 0: backdrop (engine-bound)
 uniform sampler2D uSdfTexture;                     // sampler 1: baked signed-distance field
@@ -35,8 +39,9 @@ float sdfAt(vec2 uvField) {
 
 void main() {
   vec2 fragCoord = FlutterFragCoord().xy;
-  vec2 uvField = fragCoord / uSize;   // our own texture: never flipped
-  vec2 uv = uvField;                  // backdrop
+  // Field uv: position within the widget rect (our own texture: never flipped).
+  vec2 uvField = (fragCoord - uRectOrigin) / uRectSize;
+  vec2 uv = fragCoord / uSize;        // backdrop: input-texture space
 // Impeller's GL backend samples the backdrop upside-down; flip at compile time.
 #ifdef IMPELLER_TARGET_OPENGLES
   uv.y = 1.0 - uv.y;
@@ -44,8 +49,9 @@ void main() {
 
   float d = sdfAt(uvField);                          // negative inside
 
-  // Surface normal from the field gradient (finite differences, one pixel).
-  vec2 e = vec2(1.0) / uSize;
+  // Surface normal from the field gradient (finite differences, one device
+  // pixel expressed in field-uv units).
+  vec2 e = vec2(1.0) / uRectSize;
   float gx = sdfAt(uvField + vec2(e.x, 0.0)) - sdfAt(uvField - vec2(e.x, 0.0));
   float gy = sdfAt(uvField + vec2(0.0, e.y)) - sdfAt(uvField - vec2(0.0, e.y));
   vec2 grad = normalize(vec2(gx, gy) + vec2(1e-5));

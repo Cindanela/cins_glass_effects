@@ -10,6 +10,7 @@ import '../optics/glass_capabilities.dart';
 import '../optics/glass_filter_builder.dart';
 import '../optics/glass_render_path.dart';
 import '../optics/sdf_texture_cache.dart';
+import 'glass_backdrop.dart';
 import 'glass_fallback.dart';
 
 /// Turns [child] into glass. On Impeller every shape gets full shader optics:
@@ -143,12 +144,21 @@ class _GlassContainerState extends State<GlassContainer> {
     );
   }
 
-  Widget _glass(GlassClipper clipper, ui.ImageFilter Function(GlassLight) filter) {
+  Widget _glass(
+    GlassClipper clipper,
+    ui.ImageFilter Function(GlassLight light, ui.Rect deviceRect) filter,
+  ) {
     return ValueListenableBuilder<GlassLight>(
       valueListenable: _light,
       builder: (context, light, _) => ClipPath(
         clipper: clipper,
-        child: BackdropFilter(filter: filter(light), child: widget.child),
+        // GlassBackdrop rebuilds the filter at paint time with the widget's
+        // on-screen rect — the backdrop texture is the whole screen, so the
+        // shader must be told where the glass is.
+        child: GlassBackdrop(
+          filterFactory: (deviceRect) => _withFrost(filter(light, deviceRect)),
+          child: widget.child,
+        ),
       ),
     );
   }
@@ -181,11 +191,12 @@ class _GlassContainerState extends State<GlassContainer> {
       if (_builder == null) return _fallback(clipper); // still loading
       return _glass(
         clipper,
-        (light) => _withFrost(_builder!.build(
+        (light, deviceRect) => _builder!.build(
           material: widget.material,
           light: light,
           cornerRadius: widget.shape.shaderCornerRadius,
-        )),
+          deviceRect: deviceRect,
+        ),
       );
     }
 
@@ -200,12 +211,13 @@ class _GlassContainerState extends State<GlassContainer> {
             View.of(context).devicePixelRatio;
         return _glass(
           clipper,
-          (light) => _withFrost(_sdfBuilder!.build(
+          (light, deviceRect) => _sdfBuilder!.build(
             material: widget.material,
             light: light,
             sdfTexture: texture,
             sdfRangePx: _sdfCache.sdfRangePx(dpr),
-          )),
+            deviceRect: deviceRect,
+          ),
         );
       });
     }

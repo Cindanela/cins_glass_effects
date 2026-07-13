@@ -1,5 +1,25 @@
 # Worklog
 
+## 2026-07-13 — Root-caused the on-device wash-out: backdrop input = whole screen
+
+- Hanna's Pixel screenshot showed the baked-SDF nav bar washed-out/glowing and the analytic panel
+  with tint+frost but **no edge optics** — one hypothesis explained both, confirmed by reading the
+  Impeller source (`canvas.cc`, `runtime_effect_filter_contents.cc`): **a backdrop filter's input
+  texture is the entire render pass (screen), not the clip bounds**; `uSize`/`FlutterFragCoord` are
+  in that snapshot's space. Both shaders were drawing the shape over the whole screen; the clip only
+  hid the evidence off-widget (this also retro-explains the very first "no blur on Android" run).
+- Fix: shaders take `uRectOrigin`/`uRectSize` (device px); new `GlassBackdrop`
+  (`SingleChildRenderObjectWidget` + `RenderProxyBox`) rebuilds the filter **at paint time** with
+  `localToGlobal × dpr` — the only moment the true position is known. Known limits (documented):
+  assumes no ancestor rotation/scale and the pass starting at the screen origin; glass inside a
+  scrollable can lag a frame if paint is skipped.
+- Also confirmed: the `ImageFilter.compose(blur, shader)` engine bug (flutter#170820) was fixed
+  Oct 2025 (PR #177687), so batch 1's frost compose is safe on 3.44.
+- Builders got a `debugSetUniforms` seam so tests set *all* uniforms (incl. rect) on the real
+  compiled shaders; new `glass_backdrop_test` proves the device-rect maths. 75 tests green.
+- **On-device re-check:** panel should now show fresnel rim + specular + edge refraction; the nav
+  bar should read as glass with a defined rim and a correct hole edge around the FAB.
+
 ## 2026-07-13 — Batch 2: baked-SDF shader path — custom shapes get full optics
 
 - `glass_sdf.frag`: second shader variant, optics core identical to `glass.frag` (lockstep!), but `d`
