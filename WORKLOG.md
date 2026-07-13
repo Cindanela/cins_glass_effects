@@ -1,5 +1,15 @@
 # Worklog
 
+## 2026-07-13 — Rect fix verified on Pixel; de-jagged baked edges
+
+- Hanna's re-test confirms the rect fix: panel has edge optics, the nav bar reads as glass with a
+  real rim around the FAB hole. Remaining artifact: staircase edges on baked-shape curves.
+- Cause: silhouette AA came from the baked field's mask (256-texel cap ≈ 4 device px per texel vs a
+  2 px AA band). Fix: `glass_sdf.frag` no longer masks at all — the ClipPath cuts the exact
+  anti-aliased silhouette; the field only drives optics (which fade over uEdgeWidth, so texel
+  quantisation is invisible there). Bake density doubled (~2 texels/logical px, cap 512).
+- Division of labour now explicit: **clip = silhouette, SDF = optics** on the baked path.
+
 ## 2026-07-13 — Root-caused the on-device wash-out: backdrop input = whole screen
 
 - Hanna's Pixel screenshot showed the baked-SDF nav bar washed-out/glowing and the analytic panel

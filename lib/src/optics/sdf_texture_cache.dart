@@ -75,9 +75,10 @@ class SdfTextureCache {
   _BakeKey _keyFor(GlassShape shape, ui.Size size) => _BakeKey(
         shape,
         size,
-        // Texel density tracks the surface so big panels don't go soft;
-        // clamped so tiny widgets still resolve and huge ones stay cheap.
-        size.longestSide.clamp(64, 256).round(),
+        // ~2 texels per logical px so curved rims stay smooth on high-DPI
+        // screens; clamped so tiny widgets still resolve and huge ones stay
+        // cheap (512² RGBA = 1 MB, baked once per shape+size).
+        (size.longestSide * 2).clamp(64, 512).round(),
       );
 }
 

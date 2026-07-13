@@ -20,6 +20,9 @@ Initial development work (Phase 0 + Phase 1): the real-glass rendering engine an
   builder closures per build no longer re-clip (or re-bake) every frame.
 
 ### Fixed
+- Staircase edges on baked shapes: the baked-SDF shader no longer draws its own silhouette mask
+  (the `ClipPath` already cuts an exact anti-aliased outline); the field only drives the optics.
+  Bake density doubled to ~2 texels per logical px (cap 512).
 - **Both shader paths rendered the shape over the whole screen** instead of the widget. Root
   cause (verified in the Impeller engine source): a backdrop filter's input texture is the whole
   render pass — the clip only bounds the output — so `uSize`-derived geometry was screen-sized.

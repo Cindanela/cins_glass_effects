@@ -25,6 +25,26 @@ void main() {
     expect(image!.width, greaterThan(0));
   });
 
+  testWidgets('bakes at ~2 texels per logical pixel so curves stay smooth',
+      (tester) async {
+    final cache = SdfTextureCache();
+    addTearDown(cache.dispose);
+    var ready = 0;
+
+    await tester.runAsync(() async {
+      cache.ensure(const GlassShape.circle(), const Size(300, 150),
+          onReady: () => ready++);
+      while (ready == 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+      }
+    });
+
+    final image = cache.textureFor(const GlassShape.circle(), const Size(300, 150));
+    // 300 logical px longest side × 2 = 600, capped at 512.
+    expect(image!.width, 512);
+    expect(image.height, 256);
+  });
+
   testWidgets('a fresh bake is not re-run for the same shape and size',
       (tester) async {
     final cache = SdfTextureCache();

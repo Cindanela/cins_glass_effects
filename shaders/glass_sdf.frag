@@ -82,7 +82,8 @@ void main() {
   float spec = pow(max(dot(n, l), 0.0), max(uShininess, 1.0)) * uSpecular * uIntensity;
   color += vec3(spec);
 
-  // Anti-aliased mask to the baked silhouette.
-  float mask = 1.0 - smoothstep(-1.0, 1.0, d);
-  fragColor = vec4(color, 1.0) * mask;
+  // No mask here: the widget's ClipPath cuts the exact anti-aliased
+  // silhouette. The baked field is too coarse for a 2 px mask band (staircase
+  // edges); it only needs to drive the optics, which fade over uEdgeWidth.
+  fragColor = vec4(color, 1.0);
 }
