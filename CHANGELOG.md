@@ -6,6 +6,57 @@ Pre-release — not yet published to pub.dev. On-device visual verification stil
 
 Initial development work (Phase 0 + Phase 1): the real-glass rendering engine and one flagship glass.
 
+### Added (materials & shapes batch)
+- `AnimatedGlassContainer` + `GlassMaterialTween`: implicitly animated glass — tween between any
+  two materials (e.g. `clear` → `liquid` on focus) with just `duration`/`curve`.
+- `GlassMaterial.grain` (0..1): frosted-surface noise on both shader paths, and a new
+  `GlassMaterials.frosted` preset that uses it.
+- `GlassShape.squircle({exponent})`: superellipse with iOS-style continuous corners. The
+  superellipse implicit function is *not* a distance field, so the boundary is sampled into a
+  dense polygon and the exact polygon SDF drives the optics.
+- `GlassShape.normalizedPolygon`: unit-square vertices that stretch to the widget size (the
+  size-filling twin of the absolute-coordinate `polygon`).
+
+### Added (baked-SDF shader path)
+- `shaders/glass_sdf.frag` + `GlassSdfFilterBuilder`: the same optics as the analytic shader, but
+  the silhouette comes from a baked signed-distance texture — so **any shape with an SDF (circles,
+  polygons, blobs, boolean cut-outs) now gets full shader fidelity on Impeller** instead of the
+  blur+tint fallback. The fallback remains only for non-Impeller backends and `GlassShape.path`
+  without an `sdfFn`.
+- `SdfTextureCache`: bakes once per (shape, size), supersedes stale in-flight bakes, and keeps the
+  previous texture available during resizes so glass never flashes back to the fallback.
+- `GlassShape.hasSdf`: whether a shape's SDF is evaluable (false only for `GlassShape.path` without
+  `sdfFn`, and boolean combos touching one).
+- `GlassShape.path`: a stable `id` now *decides* equality, as its docs always promised — fresh
+  builder closures per build no longer re-clip (or re-bake) every frame.
+
+### Fixed
+- Staircase edges on baked shapes: the baked-SDF shader no longer draws its own silhouette mask
+  (the `ClipPath` already cuts an exact anti-aliased outline); the field only drives the optics.
+  Bake density doubled to ~2 texels per logical px (cap 512).
+- **Both shader paths rendered the shape over the whole screen** instead of the widget. Root
+  cause (verified in the Impeller engine source): a backdrop filter's input texture is the whole
+  render pass — the clip only bounds the output — so `uSize`-derived geometry was screen-sized.
+  On device this washed out custom shapes entirely and hid the analytic path's edge optics. The
+  shaders now take the widget's rect (`uRectOrigin`/`uRectSize`), injected at paint time by a new
+  `GlassBackdrop` render object that measures its own on-screen position in device pixels.
+- `GlassFilterBuilder` now creates **one** `FragmentShader` for its lifetime and only updates
+  uniforms per frame (previously it allocated a new shader every build — jank + GPU-state leak —
+  and never disposed them). `GlassContainer` disposes the builder with its state.
+- `GlassMaterial.blurSigma` now works on the shader path too: the backdrop is blurred
+  (`ImageFilter.compose`) before the optics shader samples it, so glass is frosted on Impeller,
+  not only on the fallback. Previously only the fallback path blurred.
+- `GlassLight.intensity` is wired into the shader (`uIntensity` scales specular + Fresnel);
+  it was previously dead code.
+
+### Changed
+- **Breaking (pre-release):** `GlassContainer.flipY` is gone — the GLES backdrop flip is handled
+  at shader compile time via `IMPELLER_TARGET_OPENGLES`, so no configuration is needed.
+- **Breaking (pre-release):** `GlassMaterial.toShaderFloats` takes `lightIntensity` instead of
+  `yFlip`; `GlassFilterBuilder.build` takes a `GlassLight` instead of `lightDir`/`glesYFlip`.
+- Rendering capabilities are detected once per `GlassContainer` state instead of on every build,
+  and the fallback path's extra blur is a named, documented constant.
+
 ### Added
 - `GlassContainer` widget that turns any child into glass, with an Impeller fragment-shader path and an
   automatic blur + tint fallback where custom shaders aren't supported.

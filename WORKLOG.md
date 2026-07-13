@@ -1,5 +1,115 @@
 # Worklog
 
+## 2026-07-13 — On-device status + open issues (branch folded into main here)
+
+Verified on the Pixel: bar/FAB curves are smooth (jaggies fix works), rim + FAB-hole edge read as
+real glass. **Three visual issues remain — next session, likely in this order:**
+
+1. **Example showcase page first** (materials × shapes × animation gallery) so every following fix
+   is easy to eyeball. Hanna flips through; no more single-panel guessing.
+2. **Corner mismatch on the analytic panel** — near-certain root cause: unit mismatch. The clip
+   rounds at `cornerRadius` in *logical* px but the shader compares in *device* px (uRectSize
+   space), so the shader thinks corners are ~3× sharper than the clip on a ~3× screen. Same class
+   of issue for `edgeWidth`/`refraction`/`chromaticAberration` (docs say logical px). Fix:
+   multiply the px-valued material/shape uniforms by dpr in the builders (GlassBackdrop already
+   knows dpr), then re-tune presets if bands feel different. Verify per systematic-debugging
+   before committing to it.
+3. **Dark hairlines on the panel's left/right edges** — hypothesis: the analytic shader's own AA
+   mask fades premultiplied over the already-clipped output, double-darkening the 2 px band. The
+   SDF shader already dropped its mask (clip owns the silhouette); probably do the same in
+   `glass.frag`. Verify first.
+4. **FAB circle: doubled rim + faint rectangular seam around it** — hypotheses to test: two
+   stacked BackdropFilters (bar's + FAB's) interacting; and/or Impeller limiting the backdrop
+   coverage to the clip's bounding *rect*, visible where the FAB overlaps the already-filtered
+   bar. Needs investigation on-device; possibly compose FAB + bar into one glass shape (the
+   engine supports it: `bar.union(circle)`).
+
+Then the rest of the agreed roadmap: `GlassTheme` (defaults propagation, before any API freeze),
+material catalogue (reeded/crystalline/... as presets), camera-mirror question, true-3D axis
+(thickness + bevel `h(d)` + emboss). Pub.dev floor bump (`flutter: >=1.17.0` is boilerplate).
+
+## 2026-07-13 — Batch 3: AnimatedGlassContainer, grain, squircle, normalizedPolygon
+
+- `AnimatedGlassContainer` (`ImplicitlyAnimatedWidget` + `GlassMaterialTween`) — the review's
+  most-requested widget; material tweens, shape applies immediately.
+- `GlassMaterial.grain` + `GlassMaterials.frosted` preset; hash-noise grain in both shaders,
+  anchored to widget-local coords so it doesn't swim when the widget moves. Uniform layouts grew
+  (grain before the rect pair) — builders' rect index derives from `floats.length`, so only the
+  GLSL and packers changed.
+- `GlassShape.squircle(exponent:)` — superellipse boundary sampled to 128 vertices → exact polygon
+  SDF (the implicit superellipse function is NOT a distance field; the review's suggested formula
+  would have distorted the edge band).
+- `GlassShape.normalizedPolygon` — unit-square vertices scaled per size; SDF computed on scaled
+  vertices (distances don't survive non-uniform scaling).
+- 86 tests green. On-device: check the squircle corners and `frosted` grain.
+
+## 2026-07-13 — Rect fix verified on Pixel; de-jagged baked edges
+
+- Hanna's re-test confirms the rect fix: panel has edge optics, the nav bar reads as glass with a
+  real rim around the FAB hole. Remaining artifact: staircase edges on baked-shape curves.
+- Cause: silhouette AA came from the baked field's mask (256-texel cap ≈ 4 device px per texel vs a
+  2 px AA band). Fix: `glass_sdf.frag` no longer masks at all — the ClipPath cuts the exact
+  anti-aliased silhouette; the field only drives optics (which fade over uEdgeWidth, so texel
+  quantisation is invisible there). Bake density doubled (~2 texels/logical px, cap 512).
+- Division of labour now explicit: **clip = silhouette, SDF = optics** on the baked path.
+
+## 2026-07-13 — Root-caused the on-device wash-out: backdrop input = whole screen
+
+- Hanna's Pixel screenshot showed the baked-SDF nav bar washed-out/glowing and the analytic panel
+  with tint+frost but **no edge optics** — one hypothesis explained both, confirmed by reading the
+  Impeller source (`canvas.cc`, `runtime_effect_filter_contents.cc`): **a backdrop filter's input
+  texture is the entire render pass (screen), not the clip bounds**; `uSize`/`FlutterFragCoord` are
+  in that snapshot's space. Both shaders were drawing the shape over the whole screen; the clip only
+  hid the evidence off-widget (this also retro-explains the very first "no blur on Android" run).
+- Fix: shaders take `uRectOrigin`/`uRectSize` (device px); new `GlassBackdrop`
+  (`SingleChildRenderObjectWidget` + `RenderProxyBox`) rebuilds the filter **at paint time** with
+  `localToGlobal × dpr` — the only moment the true position is known. Known limits (documented):
+  assumes no ancestor rotation/scale and the pass starting at the screen origin; glass inside a
+  scrollable can lag a frame if paint is skipped.
+- Also confirmed: the `ImageFilter.compose(blur, shader)` engine bug (flutter#170820) was fixed
+  Oct 2025 (PR #177687), so batch 1's frost compose is safe on 3.44.
+- Builders got a `debugSetUniforms` seam so tests set *all* uniforms (incl. rect) on the real
+  compiled shaders; new `glass_backdrop_test` proves the device-rect maths. 75 tests green.
+- **On-device re-check:** panel should now show fresnel rim + specular + edge refraction; the nav
+  bar should read as glass with a defined rim and a correct hole edge around the FAB.
+
+## 2026-07-13 — Batch 2: baked-SDF shader path — custom shapes get full optics
+
+- `glass_sdf.frag`: second shader variant, optics core identical to `glass.frag` (lockstep!), but `d`
+  is decoded from a baked SDF texture (sampler 1; engine binds backdrop to sampler 0). Gradient via
+  finite differences on the field; `uSdfRange` carries spread × devicePixelRatio so distances stay in
+  the same pixel units as the analytic shader.
+- `GlassSdfFilterBuilder` (same one-shader-per-lifetime contract), `GlassMaterial.toSdfShaderFloats`,
+  `GlassShape.hasSdf`, and `SdfTextureCache` (bake once per shape+size, supersede in-flight bakes,
+  serve stale texture during resize — no fallback flash).
+- `GlassContainer` now routes: analytic shader (rounded rect) → baked-SDF shader (anything with an
+  SDF) → fallback (no shader support, or path without `sdfFn`). Size discovered post-frame via
+  `context.size` inside a `LayoutBuilder` (constraint changes retrigger measurement).
+- Fixed latent `PathShape` equality bug: a stable `id` now decides equality as documented — without
+  this, fresh closures each build would have re-baked the texture every frame.
+- Tests compile `glass_sdf.frag` for real in `flutter test` and exercise packing/cache/equality
+  (73 passing). **On-device check pending:** polygon/blob/nav-bar-hole shapes should now show
+  refraction + specular on the Pixel; verify edge-band width matches the analytic path (dpr scaling)
+  and that sampler-1 binding works with `ImageFilter.shader`.
+
+## 2026-07-13 — Optics batch 1: shader reuse, real frost on Impeller, GLES flip in-shader
+
+- External review triaged (~70% right): confirmed shader-per-frame allocation + missing shader-path
+  blur as the real bugs; rejected its premultiplied-alpha "fix" (a mathematical no-op) and its
+  squircle formula (an implicit function, not an SDF — would distort the edge band).
+- `GlassFilterBuilder`: one `FragmentShader` per builder lifetime, uniforms updated in place,
+  `dispose()` added and called from `GlassContainer.dispose`. New tests compile the real shader
+  asset in `flutter test` (bare asset key inside the package), proving GLSL/Dart uniform lockstep.
+- Shader path now frosts: `blurSigma` composed under the optics filter (`ImageFilter.compose`),
+  explaining the observed "Windows blurs, Android doesn't" — Android took the shader path, which
+  had no blur. Needs on-device re-check.
+- `GlassLight.intensity` wired (`uIntensity` × specular/Fresnel); `flipY` param deleted — GLES flip
+  is now `#ifdef IMPELLER_TARGET_OPENGLES` in `glass.frag` (engine-defined, documented in `dart:ui`).
+- Confirmed in `dart:ui` docs that `ImageFilter.shader` allows extra samplers ("at least one…") —
+  the baked-SDF-texture milestone is API-viable as designed; it's the next batch.
+- Housekeeping: capabilities detected once per state; fallback `+6` named `_fallbackBlurBoost`;
+  example got `flutter_lints` so `flutter analyze` is clean repo-wide.
+
 ## 2026-06-21 — Real glass nav bar fixture + baked-SDF baker (toward no GPU fallback)
 
 - **Glass nav bar test** (`test/widgets/glass_nav_bar_test.dart`): rebuilt subscription_tracker's bottom

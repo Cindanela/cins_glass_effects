@@ -17,9 +17,13 @@ graceful blur + tint fallback where custom shaders aren't available.
 
 | Platform | What you get |
 | --- | --- |
-| Android, iOS (Impeller) | Full shader: refraction, chromatic aberration, specular, Fresnel, tint |
-| Windows / macOS / Linux desktop (Impeller) | Full shader |
-| Web, or any non‑Impeller backend | Blur + tint fallback (no real refraction) |
+| Android, iOS (Impeller) | Full shader: refraction, chromatic aberration, specular, Fresnel, tint, frost |
+| Desktop / web / any backend without `ImageFilter.shader` | Blur + tint fallback (no real refraction) |
+
+On the shader path, **every shape gets full optics**: rounded rects run the analytic shader; any
+other silhouette with distance maths (circles, polygons, blobs, boolean cut-outs) is baked into a
+signed-distance texture and rendered by the baked-SDF shader. The fallback only remains for
+non-Impeller backends and `GlassShape.path` without an `sdfFn`.
 
 The package detects this at runtime via `GlassCapabilities` — you don't have to branch on platform
 yourself.
@@ -60,17 +64,18 @@ Stack(
 
 ## Choosing a look
 
-Each "type" of glass is just a tuned `GlassMaterial`. Two presets ship today:
+Each "type" of glass is just a tuned `GlassMaterial`. Three presets ship today:
 
 ```dart
-GlassMaterials.liquid  // strong refraction, visible fringing, glossy
-GlassMaterials.clear   // cleaner, lighter refraction with a crisp rim
+GlassMaterials.liquid   // strong refraction, visible fringing, glossy
+GlassMaterials.clear    // cleaner, lighter refraction with a crisp rim
+GlassMaterials.frosted  // deep blur + tactile grain, soft rim
 ```
 
 Or build your own:
 
 ```dart
-const frosted = GlassMaterial(
+const bathroomWindow = GlassMaterial(
   refraction: 4,
   chromaticAberration: 0.5,
   specular: 0.3,
@@ -79,10 +84,25 @@ const frosted = GlassMaterial(
   tint: Color(0x22FFFFFF),
   blurSigma: 8,
   edgeWidth: 14,
+  grain: 0.5, // frosted-surface noise
 );
 ```
 
-`GlassMaterial` supports `copyWith` and `GlassMaterial.lerp(a, b, t)` for animating between looks.
+`GlassMaterial` supports `copyWith` and `GlassMaterial.lerp(a, b, t)`. To animate between looks,
+use `AnimatedGlassContainer` — an implicitly animated `GlassContainer` (same API plus
+`duration`/`curve`) that tweens every optical parameter:
+
+```dart
+AnimatedGlassContainer(
+  duration: const Duration(milliseconds: 250),
+  material: focused ? GlassMaterials.liquid : GlassMaterials.clear,
+  child: /* ... */,
+);
+```
+
+Shapes include `roundedRect`, `circle`, `squircle` (superellipse — iOS-style continuous corners),
+`polygon` (absolute coordinates), `normalizedPolygon` (unit-square coordinates that stretch to the
+widget), arbitrary `path`, and boolean combinators (`union`/`intersection`/`difference`).
 
 ## Lighting (opt‑in, nothing forced)
 
@@ -166,12 +186,13 @@ plus arbitrary `Path` shapes, desktop polish, and a refined web fallback.
 
 ## Known limitations
 
-- Real refraction needs Impeller; web uses the blur + tint fallback.
+- Real refraction needs Impeller with `ImageFilter.shader` support; web and (currently) desktop
+  use the blur + tint fallback.
 - Shader **visuals** can't be verified by headless tests (they need Impeller) — check the look on a
   device via the example app. The package's unit/widget tests cover the math, presets, capability
   gating, and fallback path.
-- Some Android OpenGL‑ES backends render the sampled backdrop vertically flipped; set
-  `GlassContainer(flipY: true)` if you hit that.
+- Android OpenGL‑ES backdrop orientation is handled automatically in the shader
+  (compile-time `IMPELLER_TARGET_OPENGLES` flip) — no configuration needed.
 
 ## License
 

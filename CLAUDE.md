@@ -16,9 +16,11 @@ debossing, …) are **materials / surface treatments** — parameter sets over t
 hardcoded geometry.
 
 **Current state: working engine, pre-release (unpublished).** Implemented: `GlassContainer`, the
-`shaders/glass.frag` optics shader, the `GlassMaterial` model + `liquid`/`clear` presets, opt-in
-lighting, capability detection, and the SDF-driven shape system below. The wider material catalogue and
-true-3D surface are still to build (see Roadmap in README / `WORKLOG.md`).
+`shaders/glass.frag` + `glass_sdf.frag` optics shaders, the `GlassMaterial` model + `liquid`/`clear`
+presets, opt-in lighting, capability detection, the SDF-driven shape system below, and the
+baked-SDF-texture path (any shape with an SDF gets full shader optics on Impeller; on-device visual
+verification pending). The wider material catalogue and true-3D surface are still to build (see
+Roadmap in README / `WORKLOG.md`).
 
 ## Core architecture — the SDF *is* the shape API
 
@@ -34,19 +36,25 @@ its **signed distance field** and the optics follow it exactly — any silhouett
 - `shape_generators.dart` — maths that *generate* geometry (e.g. `harmonicBlob`, a Fourier-perturbed
   circle) → vertices → `GlassShape.polygon` (exact SDF, fully-optical).
 
-### Why the shader "hardcodes" a shape — and the no-fallback rule
+### Two shaders, one optics core — and the no-fallback rule
 
 A fragment shader is compiled GLSL with **fixed-size uniforms**; it can't accept a variable-length
-polygon or an arbitrary Dart function. So `glass.frag` currently hardcodes `sdRoundedBox`, and shapes
-it can't represent exactly (`shaderRepresentable == false`) route to a **shape-accurate CPU fallback**
-(correct silhouette + rim via the exact clip path; blur+tint instead of full shader refraction).
+polygon or an arbitrary Dart function. So there are two shader variants with an identical optics core
+(**keep them in lockstep**): `glass.frag` computes `sdRoundedBox` analytically; `glass_sdf.frag` reads
+`d` from a **baked SDF texture** (sampler 1; the engine binds the backdrop to sampler 0). `SdfField`
+bakes any `GlassShape.sdf` into that texture; `SdfTextureCache` owns one bake per (shape, size) and
+serves a stale texture during resizes so glass never flashes back to the fallback.
 
-Two layers, only one of which falls back:
+**Backdrop geometry gotcha (verified in Impeller source):** a backdrop filter's input texture is the
+**whole render pass** (screen) — the clip only bounds the output. So both shaders take the widget's
+rect as uniforms (`uRectOrigin`/`uRectSize`, device px), injected at paint time by `GlassBackdrop`
+(custom render object, `localToGlobal × dpr`). Never derive shape geometry from `uSize` — it's the
+snapshot size, not the widget size.
+
 - **Shape math — never falls back, and is complete.** Every closed shape has an exact SDF.
-- **GPU rendering of an arbitrary SDF — the only gap.** The fix is a **baked SDF texture** (rasterize
-  the field once, sample it on-GPU) — standard, efficient, no custom engine. That milestone deletes the
-  render fallback so every custom shape gets full shader fidelity. Treat any *math*-level fallback as a
-  bug; treat the *GPU* fallback as temporary plumbing, not the intended end state.
+- **The blur+tint fallback remains only for**: backends without `ImageFilter.shader` (web, currently
+  desktop), and `GlassShape.path` without an `sdfFn` (`hasSdf == false`). Treat any *math*-level
+  fallback as a bug. On Impeller, every shape with an SDF gets full shader optics.
 
 ### Next axis (not built): true 3D
 
@@ -78,18 +86,8 @@ pick the implementation per platform rather than lowest-common-denominator every
   if it's what lets the user make any glass type in the README.
 - **Tree shaking** so apps only pay for the effects/shaders they actually use.
 - How camera-based mirror effects fit in (permissions, platform support, optional dependency).
-- The **baked-SDF-texture** shader path (removes the GPU fallback for arbitrary shapes).
 
-## Commands
-
-```bash
-flutter pub get          # install dependencies
-flutter test             # run all tests
-flutter test test/<file>_test.dart               # run a single test file
-flutter test --name "<test name>"                # run a single test by name
-flutter analyze          # static analysis (lints from flutter_lints)
-dart format .            # format
-```
+## Verification
 
 Primary verification is `flutter test` / widget tests. An `example/` gallery app exists for on-device
 **visual** checks (the optics shader needs Impeller and can't be unit-tested), but logic/geometry is
@@ -102,7 +100,5 @@ verified by tests, not by launching.
   re-exported is package-private.
 - **Tests** in `test/`, mirroring `lib/`, using `package:flutter_test` (`testWidgets` / `WidgetTester`
   for widget effects).
-- **Lints:** `analysis_options.yaml` includes `package:flutter_lints/flutter.yaml`; keep
-  `flutter analyze` clean.
 - No third-party runtime dependencies are declared yet — adding one (or a shader asset) is a
   deliberate decision; prefer framework/`dart:ui` primitives first.
