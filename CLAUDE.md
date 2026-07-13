@@ -80,16 +80,7 @@ pick the implementation per platform rather than lowest-common-denominator every
 - How camera-based mirror effects fit in (permissions, platform support, optional dependency).
 - The **baked-SDF-texture** shader path (removes the GPU fallback for arbitrary shapes).
 
-## Commands
-
-```bash
-flutter pub get          # install dependencies
-flutter test             # run all tests
-flutter test test/<file>_test.dart               # run a single test file
-flutter test --name "<test name>"                # run a single test by name
-flutter analyze          # static analysis (lints from flutter_lints)
-dart format .            # format
-```
+## Verification
 
 Primary verification is `flutter test` / widget tests. An `example/` gallery app exists for on-device
 **visual** checks (the optics shader needs Impeller and can't be unit-tested), but logic/geometry is
@@ -102,7 +93,5 @@ verified by tests, not by launching.
   re-exported is package-private.
 - **Tests** in `test/`, mirroring `lib/`, using `package:flutter_test` (`testWidgets` / `WidgetTester`
   for widget effects).
-- **Lints:** `analysis_options.yaml` includes `package:flutter_lints/flutter.yaml`; keep
-  `flutter analyze` clean.
 - No third-party runtime dependencies are declared yet — adding one (or a shader asset) is a
   deliberate decision; prefer framework/`dart:ui` primitives first.
