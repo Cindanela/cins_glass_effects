@@ -6,6 +6,17 @@ Pre-release — not yet published to pub.dev. On-device visual verification stil
 
 Initial development work (Phase 0 + Phase 1): the real-glass rendering engine and one flagship glass.
 
+### Added (materials & shapes batch)
+- `AnimatedGlassContainer` + `GlassMaterialTween`: implicitly animated glass — tween between any
+  two materials (e.g. `clear` → `liquid` on focus) with just `duration`/`curve`.
+- `GlassMaterial.grain` (0..1): frosted-surface noise on both shader paths, and a new
+  `GlassMaterials.frosted` preset that uses it.
+- `GlassShape.squircle({exponent})`: superellipse with iOS-style continuous corners. The
+  superellipse implicit function is *not* a distance field, so the boundary is sampled into a
+  dense polygon and the exact polygon SDF drives the optics.
+- `GlassShape.normalizedPolygon`: unit-square vertices that stretch to the widget size (the
+  size-filling twin of the absolute-coordinate `polygon`).
+
 ### Added (baked-SDF shader path)
 - `shaders/glass_sdf.frag` + `GlassSdfFilterBuilder`: the same optics as the analytic shader, but
   the silhouette comes from a baked signed-distance texture — so **any shape with an SDF (circles,

@@ -14,10 +14,11 @@ layout(location = 7) uniform vec4  uTint;         // 9,10,11,12
 layout(location = 8) uniform float uCornerRadius; // 13
 layout(location = 9) uniform float uEdgeWidth;    // 14
 layout(location = 10) uniform float uIntensity;   // 15 (light intensity)
+layout(location = 11) uniform float uGrain;       // 16 (frost grain strength)
 // The backdrop input texture is the WHOLE render pass (screen), not the widget
 // bounds — the widget's rect within it must be passed in (device px).
-layout(location = 11) uniform vec2 uRectOrigin;   // 16,17
-layout(location = 12) uniform vec2 uRectSize;     // 18,19
+layout(location = 12) uniform vec2 uRectOrigin;   // 17,18
+layout(location = 13) uniform vec2 uRectSize;     // 19,20
 
 uniform sampler2D uTexture;                        // sampler 0: backdrop
 
@@ -76,6 +77,11 @@ void main() {
   vec3 l = normalize(vec3(uLightDir, 1.0));
   float spec = pow(max(dot(n, l), 0.0), max(uShininess, 1.0)) * uSpecular * uIntensity;
   color += vec3(spec);
+
+  // Frosted grain: hash noise in widget-local coords (stable as the widget
+  // moves), strongest where the tint/frost reads as surface.
+  float noise = fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+  color += (noise - 0.5) * uGrain * 0.25;
 
   // Anti-aliased mask to the rounded-rect shape.
   float mask = 1.0 - smoothstep(-1.0, 1.0, d);

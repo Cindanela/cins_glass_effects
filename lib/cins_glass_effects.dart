@@ -16,4 +16,5 @@ export 'src/materials/glass_material.dart';
 export 'src/materials/glass_presets.dart';
 export 'src/light/glass_light.dart';
 export 'src/widgets/glass_container.dart';
+export 'src/widgets/animated_glass_container.dart';
 export 'src/widgets/glass_fallback.dart';

@@ -15,6 +15,7 @@ class GlassMaterial {
     this.tint = const Color(0x00FFFFFF),
     this.blurSigma = 0.0,
     this.edgeWidth = 12.0,
+    this.grain = 0.0,
   });
 
   /// Max backdrop displacement near edges, in logical px.
@@ -41,6 +42,10 @@ class GlassMaterial {
   /// Width (px) of the reactive edge band that drives Fresnel/refraction.
   final double edgeWidth;
 
+  /// Frosted-surface grain strength, 0..1 — the fine noise that makes frosted
+  /// glass read as tactile instead of slick. Shader paths only.
+  final double grain;
+
   GlassMaterial copyWith({
     double? refraction,
     double? chromaticAberration,
@@ -50,6 +55,7 @@ class GlassMaterial {
     Color? tint,
     double? blurSigma,
     double? edgeWidth,
+    double? grain,
   }) {
     return GlassMaterial(
       refraction: refraction ?? this.refraction,
@@ -60,6 +66,7 @@ class GlassMaterial {
       tint: tint ?? this.tint,
       blurSigma: blurSigma ?? this.blurSigma,
       edgeWidth: edgeWidth ?? this.edgeWidth,
+      grain: grain ?? this.grain,
     );
   }
 
@@ -73,10 +80,11 @@ class GlassMaterial {
       tint: Color.lerp(a.tint, b.tint, t)!,
       blurSigma: lerpDouble(a.blurSigma, b.blurSigma, t)!,
       edgeWidth: lerpDouble(a.edgeWidth, b.edgeWidth, t)!,
+      grain: lerpDouble(a.grain, b.grain, t)!,
     );
   }
 
-  /// Floats for shader uniform indices 2..15. Index 0,1 are `uSize`, which the
+  /// Floats for shader uniform indices 2..16. Index 0,1 are `uSize`, which the
   /// engine sets automatically for `ImageFilter.shader`. Order MUST match the
   /// uniform declaration order in `shaders/glass.frag`.
   Float32List toShaderFloats({
@@ -95,10 +103,11 @@ class GlassMaterial {
       cornerRadius,
       edgeWidth,
       lightIntensity,
+      grain,
     ]);
   }
 
-  /// Floats for the baked-SDF shader (`shaders/glass_sdf.frag`), indices 2..15.
+  /// Floats for the baked-SDF shader (`shaders/glass_sdf.frag`), indices 2..16.
   /// No corner radius — the silhouette lives entirely in the SDF texture.
   /// [sdfRangePx] is the pixel span the texture's `[0,1]` encoding maps back
   /// onto (2 × spread, pre-multiplied by the device pixel ratio). Order MUST
@@ -119,6 +128,7 @@ class GlassMaterial {
       edgeWidth,
       lightIntensity,
       sdfRangePx,
+      grain,
     ]);
   }
 
@@ -132,11 +142,12 @@ class GlassMaterial {
       other.fresnel == fresnel &&
       other.tint == tint &&
       other.blurSigma == blurSigma &&
-      other.edgeWidth == edgeWidth;
+      other.edgeWidth == edgeWidth &&
+      other.grain == grain;
 
   @override
   int get hashCode => Object.hash(
         refraction, chromaticAberration, specular, shininess,
-        fresnel, tint, blurSigma, edgeWidth,
+        fresnel, tint, blurSigma, edgeWidth, grain,
       );
 }

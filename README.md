@@ -64,17 +64,18 @@ Stack(
 
 ## Choosing a look
 
-Each "type" of glass is just a tuned `GlassMaterial`. Two presets ship today:
+Each "type" of glass is just a tuned `GlassMaterial`. Three presets ship today:
 
 ```dart
-GlassMaterials.liquid  // strong refraction, visible fringing, glossy
-GlassMaterials.clear   // cleaner, lighter refraction with a crisp rim
+GlassMaterials.liquid   // strong refraction, visible fringing, glossy
+GlassMaterials.clear    // cleaner, lighter refraction with a crisp rim
+GlassMaterials.frosted  // deep blur + tactile grain, soft rim
 ```
 
 Or build your own:
 
 ```dart
-const frosted = GlassMaterial(
+const bathroomWindow = GlassMaterial(
   refraction: 4,
   chromaticAberration: 0.5,
   specular: 0.3,
@@ -83,10 +84,25 @@ const frosted = GlassMaterial(
   tint: Color(0x22FFFFFF),
   blurSigma: 8,
   edgeWidth: 14,
+  grain: 0.5, // frosted-surface noise
 );
 ```
 
-`GlassMaterial` supports `copyWith` and `GlassMaterial.lerp(a, b, t)` for animating between looks.
+`GlassMaterial` supports `copyWith` and `GlassMaterial.lerp(a, b, t)`. To animate between looks,
+use `AnimatedGlassContainer` — an implicitly animated `GlassContainer` (same API plus
+`duration`/`curve`) that tweens every optical parameter:
+
+```dart
+AnimatedGlassContainer(
+  duration: const Duration(milliseconds: 250),
+  material: focused ? GlassMaterials.liquid : GlassMaterials.clear,
+  child: /* ... */,
+);
+```
+
+Shapes include `roundedRect`, `circle`, `squircle` (superellipse — iOS-style continuous corners),
+`polygon` (absolute coordinates), `normalizedPolygon` (unit-square coordinates that stretch to the
+widget), arbitrary `path`, and boolean combinators (`union`/`intersection`/`difference`).
 
 ## Lighting (opt‑in, nothing forced)
 

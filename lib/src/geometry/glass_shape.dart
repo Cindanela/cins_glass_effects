@@ -34,8 +34,20 @@ abstract class GlassShape {
   /// Sample any smooth outline (a Fourier blob, a traced `Path`) into enough
   /// [vertices] and the optics get a correct edge with no shape-specific code.
   /// Vertices are absolute (top-left origin) coordinates; the closing edge is
-  /// implied.
+  /// implied. For vertices in the unit square that should stretch to the
+  /// widget, use [GlassShape.normalizedPolygon].
   const factory GlassShape.polygon(List<Offset> vertices) = PolygonShape;
+
+  /// A closed polygon whose [unitVertices] live in the unit square `[0,1]²`
+  /// and stretch to fill the available size — resolution-independent, unlike
+  /// the absolute-coordinate [GlassShape.polygon].
+  const factory GlassShape.normalizedPolygon(List<Offset> unitVertices) =
+      NormalizedPolygonShape;
+
+  /// A superellipse ("squircle") inscribed in the available size — the
+  /// continuous-curvature corner familiar from iOS. [exponent] 2 is an
+  /// ellipse; higher values approach a rectangle (4 is the classic squircle).
+  const factory GlassShape.squircle({double exponent}) = SquircleShape;
 
   /// An arbitrary silhouette built from a [Path].
   ///
@@ -272,6 +284,81 @@ class PolygonShape extends GlassShape {
 
   @override
   int get hashCode => Object.hashAll(vertices);
+}
+
+/// A polygon in normalized `[0,1]²` coordinates, scaled to the surface each
+/// time it's used — the size-filling twin of [PolygonShape].
+///
+/// The SDF is computed on the *scaled* vertices (distances under non-uniform
+/// scaling aren't just scaled distances), so it stays exact at any size.
+class NormalizedPolygonShape extends GlassShape {
+  const NormalizedPolygonShape(this.unitVertices)
+      : assert(unitVertices.length >= 3, 'a polygon needs at least 3 vertices');
+
+  final List<Offset> unitVertices;
+
+  List<Offset> _scaled(Size size) => [
+        for (final v in unitVertices) Offset(v.dx * size.width, v.dy * size.height),
+      ];
+
+  @override
+  Path clipPath(Size size) => Path()..addPolygon(_scaled(size), true);
+
+  @override
+  double sdf(Offset p, Size size) => ShapeSdf.polygon(p, _scaled(size));
+
+  @override
+  bool operator ==(Object other) =>
+      other is NormalizedPolygonShape && listEquals(other.unitVertices, unitVertices);
+
+  @override
+  int get hashCode => Object.hashAll(unitVertices);
+}
+
+/// A superellipse (|x/a|ⁿ + |y/b|ⁿ = 1) inscribed in the available size.
+///
+/// There is no closed-form exact SDF for a superellipse (the implicit function
+/// is not a distance), so the boundary is sampled into a dense polygon and
+/// [ShapeSdf.polygon] provides the exact distance — the same escape hatch every
+/// custom outline uses, so the optics stay correct.
+class SquircleShape extends GlassShape {
+  const SquircleShape({this.exponent = 4})
+      : assert(exponent >= 2, 'exponent < 2 makes a star, not a squircle');
+
+  /// Corner fullness: 2 = ellipse, 4 = classic squircle, higher → boxier.
+  final double exponent;
+
+  static const int _segments = 128;
+
+  List<Offset> _vertices(Size size) {
+    final a = size.width / 2;
+    final b = size.height / 2;
+    final c = _centre(size);
+    final k = 2 / exponent;
+    return List.generate(_segments, (i) {
+      final t = 2 * math.pi * i / _segments;
+      final ct = math.cos(t);
+      final st = math.sin(t);
+      return c +
+          Offset(
+            a * ct.sign * math.pow(ct.abs(), k).toDouble(),
+            b * st.sign * math.pow(st.abs(), k).toDouble(),
+          );
+    });
+  }
+
+  @override
+  Path clipPath(Size size) => Path()..addPolygon(_vertices(size), true);
+
+  @override
+  double sdf(Offset p, Size size) => ShapeSdf.polygon(p, _vertices(size));
+
+  @override
+  bool operator ==(Object other) =>
+      other is SquircleShape && other.exponent == exponent;
+
+  @override
+  int get hashCode => exponent.hashCode;
 }
 
 /// Clips a child to a [GlassShape].

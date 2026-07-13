@@ -1,5 +1,20 @@
 # Worklog
 
+## 2026-07-13 — Batch 3: AnimatedGlassContainer, grain, squircle, normalizedPolygon
+
+- `AnimatedGlassContainer` (`ImplicitlyAnimatedWidget` + `GlassMaterialTween`) — the review's
+  most-requested widget; material tweens, shape applies immediately.
+- `GlassMaterial.grain` + `GlassMaterials.frosted` preset; hash-noise grain in both shaders,
+  anchored to widget-local coords so it doesn't swim when the widget moves. Uniform layouts grew
+  (grain before the rect pair) — builders' rect index derives from `floats.length`, so only the
+  GLSL and packers changed.
+- `GlassShape.squircle(exponent:)` — superellipse boundary sampled to 128 vertices → exact polygon
+  SDF (the implicit superellipse function is NOT a distance field; the review's suggested formula
+  would have distorted the edge band).
+- `GlassShape.normalizedPolygon` — unit-square vertices scaled per size; SDF computed on scaled
+  vertices (distances don't survive non-uniform scaling).
+- 86 tests green. On-device: check the squircle corners and `frosted` grain.
+
 ## 2026-07-13 — Rect fix verified on Pixel; de-jagged baked edges
 
 - Hanna's re-test confirms the rect fix: panel has edge optics, the nav bar reads as glass with a

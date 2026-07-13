@@ -16,6 +16,19 @@ abstract final class GlassMaterials {
     edgeWidth: 18,
   );
 
+  /// Heavily frosted glass: deep blur, tactile grain, soft rim.
+  static const GlassMaterial frosted = GlassMaterial(
+    refraction: 6,
+    chromaticAberration: 1,
+    specular: 0.35,
+    shininess: 24,
+    fresnel: 0.4,
+    tint: Color(0x1FFFFFFF),
+    blurSigma: 10,
+    edgeWidth: 16,
+    grain: 0.35,
+  );
+
   /// Clean, nearly-clear glass with light refraction and a crisp rim.
   static const GlassMaterial clear = GlassMaterial(
     refraction: 8,
