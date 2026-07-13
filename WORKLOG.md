@@ -1,5 +1,23 @@
 # Worklog
 
+## 2026-07-13 — Optics batch 1: shader reuse, real frost on Impeller, GLES flip in-shader
+
+- External review triaged (~70% right): confirmed shader-per-frame allocation + missing shader-path
+  blur as the real bugs; rejected its premultiplied-alpha "fix" (a mathematical no-op) and its
+  squircle formula (an implicit function, not an SDF — would distort the edge band).
+- `GlassFilterBuilder`: one `FragmentShader` per builder lifetime, uniforms updated in place,
+  `dispose()` added and called from `GlassContainer.dispose`. New tests compile the real shader
+  asset in `flutter test` (bare asset key inside the package), proving GLSL/Dart uniform lockstep.
+- Shader path now frosts: `blurSigma` composed under the optics filter (`ImageFilter.compose`),
+  explaining the observed "Windows blurs, Android doesn't" — Android took the shader path, which
+  had no blur. Needs on-device re-check.
+- `GlassLight.intensity` wired (`uIntensity` × specular/Fresnel); `flipY` param deleted — GLES flip
+  is now `#ifdef IMPELLER_TARGET_OPENGLES` in `glass.frag` (engine-defined, documented in `dart:ui`).
+- Confirmed in `dart:ui` docs that `ImageFilter.shader` allows extra samplers ("at least one…") —
+  the baked-SDF-texture milestone is API-viable as designed; it's the next batch.
+- Housekeeping: capabilities detected once per state; fallback `+6` named `_fallbackBlurBoost`;
+  example got `flutter_lints` so `flutter analyze` is clean repo-wide.
+
 ## 2026-06-21 — Real glass nav bar fixture + baked-SDF baker (toward no GPU fallback)
 
 - **Glass nav bar test** (`test/widgets/glass_nav_bar_test.dart`): rebuilt subscription_tracker's bottom

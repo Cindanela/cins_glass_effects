@@ -6,6 +6,24 @@ Pre-release — not yet published to pub.dev. On-device visual verification stil
 
 Initial development work (Phase 0 + Phase 1): the real-glass rendering engine and one flagship glass.
 
+### Fixed
+- `GlassFilterBuilder` now creates **one** `FragmentShader` for its lifetime and only updates
+  uniforms per frame (previously it allocated a new shader every build — jank + GPU-state leak —
+  and never disposed them). `GlassContainer` disposes the builder with its state.
+- `GlassMaterial.blurSigma` now works on the shader path too: the backdrop is blurred
+  (`ImageFilter.compose`) before the optics shader samples it, so glass is frosted on Impeller,
+  not only on the fallback. Previously only the fallback path blurred.
+- `GlassLight.intensity` is wired into the shader (`uIntensity` scales specular + Fresnel);
+  it was previously dead code.
+
+### Changed
+- **Breaking (pre-release):** `GlassContainer.flipY` is gone — the GLES backdrop flip is handled
+  at shader compile time via `IMPELLER_TARGET_OPENGLES`, so no configuration is needed.
+- **Breaking (pre-release):** `GlassMaterial.toShaderFloats` takes `lightIntensity` instead of
+  `yFlip`; `GlassFilterBuilder.build` takes a `GlassLight` instead of `lightDir`/`glesYFlip`.
+- Rendering capabilities are detected once per `GlassContainer` state instead of on every build,
+  and the fallback path's extra blur is a named, documented constant.
+
 ### Added
 - `GlassContainer` widget that turns any child into glass, with an Impeller fragment-shader path and an
   automatic blur + tint fallback where custom shaders aren't supported.

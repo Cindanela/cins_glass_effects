@@ -21,7 +21,6 @@ class GlassContainer extends StatefulWidget {
     this.shape = const GlassShape.roundedRect(28),
     this.lightSource,
     this.capabilities,
-    this.flipY = false,
   });
 
   final Widget child;
@@ -30,37 +29,45 @@ class GlassContainer extends StatefulWidget {
   final GlassLightSource? lightSource;
   final GlassCapabilities? capabilities;
 
-  /// Set true if the backdrop renders vertically flipped (some Android-GLES).
-  final bool flipY;
-
   @override
   State<GlassContainer> createState() => _GlassContainerState();
 }
+
+/// Extra blur applied on the fallback path only. Without the shader there is no
+/// refraction/specular to sell the material, so the fallback leans harder on
+/// blur to read as glass at the same [GlassMaterial.blurSigma].
+const double _fallbackBlurBoost = 6.0;
 
 class _GlassContainerState extends State<GlassContainer> {
   GlassFilterBuilder? _builder;
   late GlassLightSource _light;
   ManualLightSource? _ownedLight;
+  late final GlassCapabilities _caps;
 
   @override
   void initState() {
     super.initState();
     _light = widget.lightSource ?? (_ownedLight = ManualLightSource());
+    // Capabilities are fixed per engine run — detect once, not per build.
+    _caps = widget.capabilities ?? GlassCapabilities.detect();
     _maybeLoadShader();
   }
-
-  GlassCapabilities get _caps => widget.capabilities ?? GlassCapabilities.detect();
 
   void _maybeLoadShader() {
     if (resolveGlassRenderPath(capabilities: _caps) == GlassRenderPath.shader) {
       GlassFilterBuilder.load().then((b) {
-        if (mounted) setState(() => _builder = b);
+        if (mounted) {
+          setState(() => _builder = b);
+        } else {
+          b.dispose();
+        }
       });
     }
   }
 
   @override
   void dispose() {
+    _builder?.dispose();
     _ownedLight?.dispose();
     super.dispose();
   }
@@ -81,8 +88,8 @@ class _GlassContainerState extends State<GlassContainer> {
         clipper: clipper,
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(
-            sigmaX: widget.material.blurSigma + 6,
-            sigmaY: widget.material.blurSigma + 6,
+            sigmaX: widget.material.blurSigma + _fallbackBlurBoost,
+            sigmaY: widget.material.blurSigma + _fallbackBlurBoost,
           ),
           child: CustomPaint(
             foregroundPainter: GlassFallbackOverlay(
@@ -98,12 +105,22 @@ class _GlassContainerState extends State<GlassContainer> {
     return ValueListenableBuilder<GlassLight>(
       valueListenable: _light,
       builder: (context, light, _) {
-        final filter = _builder!.build(
+        var filter = _builder!.build(
           material: widget.material,
-          lightDir: light.direction,
+          light: light,
           cornerRadius: widget.shape.shaderCornerRadius,
-          glesYFlip: widget.flipY,
         );
+        // The optics shader refracts but doesn't blur; frost the backdrop
+        // first so the shader samples an already-softened image.
+        if (widget.material.blurSigma > 0) {
+          filter = ui.ImageFilter.compose(
+            outer: filter,
+            inner: ui.ImageFilter.blur(
+              sigmaX: widget.material.blurSigma,
+              sigmaY: widget.material.blurSigma,
+            ),
+          );
+        }
         return ClipPath(
           clipper: clipper,
           child: BackdropFilter(filter: filter, child: widget.child),

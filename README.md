@@ -170,8 +170,8 @@ plus arbitrary `Path` shapes, desktop polish, and a refined web fallback.
 - Shader **visuals** can't be verified by headless tests (they need Impeller) — check the look on a
   device via the example app. The package's unit/widget tests cover the math, presets, capability
   gating, and fallback path.
-- Some Android OpenGL‑ES backends render the sampled backdrop vertically flipped; set
-  `GlassContainer(flipY: true)` if you hit that.
+- Android OpenGL‑ES backdrop orientation is handled automatically in the shader
+  (compile-time `IMPELLER_TARGET_OPENGLES` flip) — no configuration needed.
 
 ## License
 

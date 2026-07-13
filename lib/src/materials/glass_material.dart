@@ -35,7 +35,7 @@ class GlassMaterial {
   /// Glass colour wash (alpha = strength).
   final Color tint;
 
-  /// Backdrop blur sigma (used by the fallback path; subtle in shader path).
+  /// Backdrop blur sigma — the "frost". Applied on both render paths.
   final double blurSigma;
 
   /// Width (px) of the reactive edge band that drives Fresnel/refraction.
@@ -81,8 +81,8 @@ class GlassMaterial {
   /// uniform declaration order in `shaders/glass.frag`.
   Float32List toShaderFloats({
     required Offset lightDir,
+    required double lightIntensity,
     required double cornerRadius,
-    required double yFlip,
   }) {
     return Float32List.fromList(<double>[
       lightDir.dx, lightDir.dy,
@@ -94,7 +94,7 @@ class GlassMaterial {
       tint.r, tint.g, tint.b, tint.a,
       cornerRadius,
       edgeWidth,
-      yFlip,
+      lightIntensity,
     ]);
   }
 

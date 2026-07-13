@@ -13,7 +13,7 @@ layout(location = 6) uniform float uFresnel;      // 8
 layout(location = 7) uniform vec4  uTint;         // 9,10,11,12
 layout(location = 8) uniform float uCornerRadius; // 13
 layout(location = 9) uniform float uEdgeWidth;    // 14
-layout(location = 10) uniform float uYFlip;       // 15
+layout(location = 10) uniform float uIntensity;   // 15 (light intensity)
 
 uniform sampler2D uTexture;                        // sampler 0: backdrop
 
@@ -28,7 +28,10 @@ float sdRoundedBox(vec2 p, vec2 b, float r) {
 void main() {
   vec2 fragCoord = FlutterFragCoord().xy;
   vec2 uv = fragCoord / uSize;
-  if (uYFlip > 0.5) { uv.y = 1.0 - uv.y; }
+// Impeller's GL backend samples the backdrop upside-down; flip at compile time.
+#ifdef IMPELLER_TARGET_OPENGLES
+  uv.y = 1.0 - uv.y;
+#endif
 
   vec2 halfSize = uSize * 0.5;
   vec2 p = fragCoord - halfSize;
@@ -61,13 +64,13 @@ void main() {
   // Glass tint.
   color = mix(color, uTint.rgb, uTint.a);
 
-  // Fresnel rim brightening.
-  color += vec3(pow(edge, 2.0) * uFresnel);
+  // Fresnel rim brightening, scaled by how strong the light is.
+  color += vec3(pow(edge, 2.0) * uFresnel * uIntensity);
 
   // Specular highlight off the beveled edge.
   vec3 n = normalize(vec3(grad * edge, 1.0));
   vec3 l = normalize(vec3(uLightDir, 1.0));
-  float spec = pow(max(dot(n, l), 0.0), max(uShininess, 1.0)) * uSpecular;
+  float spec = pow(max(dot(n, l), 0.0), max(uShininess, 1.0)) * uSpecular * uIntensity;
   color += vec3(spec);
 
   // Anti-aliased mask to the rounded-rect shape.
