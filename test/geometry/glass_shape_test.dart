@@ -67,5 +67,40 @@ void main() {
     test('routes to the fallback, never the analytic shader', () {
       expect(GlassShape.path(triangle).shaderRepresentable, isFalse);
     });
+
+    test('a stable id makes fresh builder closures equal', () {
+      // Docs promise: "pass a stable id if the builder is a fresh closure each
+      // build". Equality must then be decided by the id, or every rebuild
+      // re-clips and re-bakes.
+      final a = GlassShape.path((s) => triangle(s), id: 'tri');
+      final b = GlassShape.path((s) => triangle(s), id: 'tri');
+      final c = GlassShape.path((s) => triangle(s), id: 'other');
+      expect(a, equals(b));
+      expect(a.hashCode, b.hashCode);
+      expect(a == c, isFalse);
+    });
+  });
+
+  group('hasSdf', () {
+    test('every shape with distance maths reports an SDF', () {
+      expect(const GlassShape.roundedRect(8).hasSdf, isTrue);
+      expect(const GlassShape.circle().hasSdf, isTrue);
+      expect(
+        GlassShape.polygon(const [Offset.zero, Offset(10, 0), Offset(5, 8)]).hasSdf,
+        isTrue,
+      );
+    });
+
+    test('a path without sdfFn has none, and poisons boolean combos', () {
+      final noSdf = GlassShape.path((s) => Path()..addRect(Offset.zero & s));
+      final withSdf = GlassShape.path(
+        (s) => Path()..addRect(Offset.zero & s),
+        sdfFn: (p, s) => 0,
+      );
+      expect(noSdf.hasSdf, isFalse);
+      expect(withSdf.hasSdf, isTrue);
+      expect(const GlassShape.circle().union(noSdf).hasSdf, isFalse);
+      expect(const GlassShape.circle().union(withSdf).hasSdf, isTrue);
+    });
   });
 }

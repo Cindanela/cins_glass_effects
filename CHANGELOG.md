@@ -6,6 +6,19 @@ Pre-release — not yet published to pub.dev. On-device visual verification stil
 
 Initial development work (Phase 0 + Phase 1): the real-glass rendering engine and one flagship glass.
 
+### Added (baked-SDF shader path)
+- `shaders/glass_sdf.frag` + `GlassSdfFilterBuilder`: the same optics as the analytic shader, but
+  the silhouette comes from a baked signed-distance texture — so **any shape with an SDF (circles,
+  polygons, blobs, boolean cut-outs) now gets full shader fidelity on Impeller** instead of the
+  blur+tint fallback. The fallback remains only for non-Impeller backends and `GlassShape.path`
+  without an `sdfFn`.
+- `SdfTextureCache`: bakes once per (shape, size), supersedes stale in-flight bakes, and keeps the
+  previous texture available during resizes so glass never flashes back to the fallback.
+- `GlassShape.hasSdf`: whether a shape's SDF is evaluable (false only for `GlassShape.path` without
+  `sdfFn`, and boolean combos touching one).
+- `GlassShape.path`: a stable `id` now *decides* equality, as its docs always promised — fresh
+  builder closures per build no longer re-clip (or re-bake) every frame.
+
 ### Fixed
 - `GlassFilterBuilder` now creates **one** `FragmentShader` for its lifetime and only updates
   uniforms per frame (previously it allocated a new shader every build — jank + GPU-state leak —

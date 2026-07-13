@@ -98,6 +98,30 @@ class GlassMaterial {
     ]);
   }
 
+  /// Floats for the baked-SDF shader (`shaders/glass_sdf.frag`), indices 2..15.
+  /// No corner radius — the silhouette lives entirely in the SDF texture.
+  /// [sdfRangePx] is the pixel span the texture's `[0,1]` encoding maps back
+  /// onto (2 × spread, pre-multiplied by the device pixel ratio). Order MUST
+  /// match the uniform declaration order in `shaders/glass_sdf.frag`.
+  Float32List toSdfShaderFloats({
+    required Offset lightDir,
+    required double lightIntensity,
+    required double sdfRangePx,
+  }) {
+    return Float32List.fromList(<double>[
+      lightDir.dx, lightDir.dy,
+      refraction,
+      chromaticAberration,
+      specular,
+      shininess,
+      fresnel,
+      tint.r, tint.g, tint.b, tint.a,
+      edgeWidth,
+      lightIntensity,
+      sdfRangePx,
+    ]);
+  }
+
   @override
   bool operator ==(Object other) =>
       other is GlassMaterial &&

@@ -46,3 +46,49 @@ class GlassFilterBuilder {
 
   void dispose() => _shader.dispose();
 }
+
+/// Asset key for the baked-SDF optics shader (arbitrary silhouettes).
+const String glassSdfShaderAsset =
+    'packages/cins_glass_effects/shaders/glass_sdf.frag';
+
+/// Builds an `ImageFilter.shader` for the baked-SDF glass shader: the same
+/// optics as [GlassFilterBuilder], but the shape is a signed-distance texture
+/// (baked by `SdfField`) instead of an analytic rounded rect — so any
+/// silhouette gets full shader fidelity.
+///
+/// Same lifecycle contract as [GlassFilterBuilder]: one shader per builder,
+/// [build] only updates uniforms, [dispose] when the owning widget goes away.
+class GlassSdfFilterBuilder {
+  GlassSdfFilterBuilder(ui.FragmentProgram program)
+      : _shader = program.fragmentShader();
+
+  final ui.FragmentShader _shader;
+
+  static Future<GlassSdfFilterBuilder> load() async => GlassSdfFilterBuilder(
+      await ui.FragmentProgram.fromAsset(glassSdfShaderAsset));
+
+  /// The reused shader instance, for tests only.
+  @visibleForTesting
+  ui.FragmentShader get debugShader => _shader;
+
+  ui.ImageFilter build({
+    required GlassMaterial material,
+    required GlassLight light,
+    required ui.Image sdfTexture,
+    required double sdfRangePx,
+  }) {
+    final floats = material.toSdfShaderFloats(
+      lightDir: light.direction,
+      lightIntensity: light.intensity,
+      sdfRangePx: sdfRangePx,
+    );
+    for (var i = 0; i < floats.length; i++) {
+      _shader.setFloat(i + 2, floats[i]);
+    }
+    // Sampler 0 is the backdrop — the engine binds it when the filter runs.
+    _shader.setImageSampler(1, sdfTexture);
+    return ui.ImageFilter.shader(_shader);
+  }
+
+  void dispose() => _shader.dispose();
+}

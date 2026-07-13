@@ -45,4 +45,36 @@ void main() {
     }
     builder.dispose();
   });
+
+  group('GlassSdfFilterBuilder', () {
+    Future<GlassSdfFilterBuilder> loadSdfForTest() async => GlassSdfFilterBuilder(
+        await ui.FragmentProgram.fromAsset('shaders/glass_sdf.frag'));
+
+    test('asset path is package-qualified', () {
+      expect(glassSdfShaderAsset,
+          'packages/cins_glass_effects/shaders/glass_sdf.frag');
+    });
+
+    testWidgets('the SDF shader compiles and accepts uniforms + texture',
+        (tester) async {
+      final builder = await tester.runAsync(loadSdfForTest);
+      final field = SdfField.sample(const GlassShape.circle(), const ui.Size(64, 64));
+      final texture = (await tester.runAsync(field.toImage))!;
+      addTearDown(texture.dispose);
+
+      final floats = GlassMaterials.liquid.toSdfShaderFloats(
+        lightDir: const ui.Offset(-0.5, -0.7),
+        lightIntensity: 1,
+        sdfRangePx: field.spread * 2,
+      );
+      for (var i = 0; i < floats.length; i++) {
+        builder!.debugShader.setFloat(i + 2, floats[i]);
+      }
+      // Sampler 0 is the backdrop (engine-bound at filter time); the baked
+      // field is sampler 1.
+      builder!.debugShader.setImageSampler(1, texture);
+      builder.dispose();
+      expect(builder.debugShader.debugDisposed, isTrue);
+    });
+  });
 }

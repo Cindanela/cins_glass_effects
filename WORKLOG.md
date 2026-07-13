@@ -1,5 +1,24 @@
 # Worklog
 
+## 2026-07-13 — Batch 2: baked-SDF shader path — custom shapes get full optics
+
+- `glass_sdf.frag`: second shader variant, optics core identical to `glass.frag` (lockstep!), but `d`
+  is decoded from a baked SDF texture (sampler 1; engine binds backdrop to sampler 0). Gradient via
+  finite differences on the field; `uSdfRange` carries spread × devicePixelRatio so distances stay in
+  the same pixel units as the analytic shader.
+- `GlassSdfFilterBuilder` (same one-shader-per-lifetime contract), `GlassMaterial.toSdfShaderFloats`,
+  `GlassShape.hasSdf`, and `SdfTextureCache` (bake once per shape+size, supersede in-flight bakes,
+  serve stale texture during resize — no fallback flash).
+- `GlassContainer` now routes: analytic shader (rounded rect) → baked-SDF shader (anything with an
+  SDF) → fallback (no shader support, or path without `sdfFn`). Size discovered post-frame via
+  `context.size` inside a `LayoutBuilder` (constraint changes retrigger measurement).
+- Fixed latent `PathShape` equality bug: a stable `id` now decides equality as documented — without
+  this, fresh closures each build would have re-baked the texture every frame.
+- Tests compile `glass_sdf.frag` for real in `flutter test` and exercise packing/cache/equality
+  (73 passing). **On-device check pending:** polygon/blob/nav-bar-hole shapes should now show
+  refraction + specular on the Pixel; verify edge-band width matches the analytic path (dpr scaling)
+  and that sampler-1 binding works with `ImageFilter.shader`.
+
 ## 2026-07-13 — Optics batch 1: shader reuse, real frost on Impeller, GLES flip in-shader
 
 - External review triaged (~70% right): confirmed shader-per-frame allocation + missing shader-path

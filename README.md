@@ -17,9 +17,13 @@ graceful blur + tint fallback where custom shaders aren't available.
 
 | Platform | What you get |
 | --- | --- |
-| Android, iOS (Impeller) | Full shader: refraction, chromatic aberration, specular, Fresnel, tint |
-| Windows / macOS / Linux desktop (Impeller) | Full shader |
-| Web, or any non‑Impeller backend | Blur + tint fallback (no real refraction) |
+| Android, iOS (Impeller) | Full shader: refraction, chromatic aberration, specular, Fresnel, tint, frost |
+| Desktop / web / any backend without `ImageFilter.shader` | Blur + tint fallback (no real refraction) |
+
+On the shader path, **every shape gets full optics**: rounded rects run the analytic shader; any
+other silhouette with distance maths (circles, polygons, blobs, boolean cut-outs) is baked into a
+signed-distance texture and rendered by the baked-SDF shader. The fallback only remains for
+non-Impeller backends and `GlassShape.path` without an `sdfFn`.
 
 The package detects this at runtime via `GlassCapabilities` — you don't have to branch on platform
 yourself.
@@ -166,7 +170,8 @@ plus arbitrary `Path` shapes, desktop polish, and a refined web fallback.
 
 ## Known limitations
 
-- Real refraction needs Impeller; web uses the blur + tint fallback.
+- Real refraction needs Impeller with `ImageFilter.shader` support; web and (currently) desktop
+  use the blur + tint fallback.
 - Shader **visuals** can't be verified by headless tests (they need Impeller) — check the look on a
   device via the example app. The package's unit/widget tests cover the math, presets, capability
   gating, and fallback path.

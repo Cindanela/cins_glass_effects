@@ -71,6 +71,11 @@ abstract class GlassShape {
   /// full shader optics once baked distance-field textures land.)
   bool get shaderRepresentable => false;
 
+  /// Whether [sdf] can be evaluated. True for every shape except
+  /// [GlassShape.path] without an `sdfFn` (and boolean combinations touching
+  /// one) — those clip correctly but can't drive the optics.
+  bool get hasSdf => true;
+
   /// A ∪ B — this shape merged with [other].
   GlassShape union(GlassShape other) => BooleanShape(BooleanOp.union, this, other);
 
@@ -185,6 +190,9 @@ class BooleanShape extends GlassShape {
   }
 
   @override
+  bool get hasSdf => a.hasSdf && b.hasSdf;
+
+  @override
   bool operator ==(Object other) =>
       other is BooleanShape && other._op == _op && other.a == a && other.b == b;
 
@@ -218,14 +226,20 @@ class PathShape extends GlassShape {
   }
 
   @override
+  bool get hasSdf => sdfFn != null;
+
+  // A stable [id] *decides* equality (that's its documented purpose: fresh
+  // builder closures each build must still compare equal, or every rebuild
+  // re-clips and re-bakes). Without an id, closure identity is all we have.
+  @override
   bool operator ==(Object other) =>
       other is PathShape &&
-      other.builder == builder &&
-      other.sdfFn == sdfFn &&
-      other.id == id;
+      (id != null || other.id != null
+          ? other.id == id
+          : other.builder == builder && other.sdfFn == sdfFn);
 
   @override
-  int get hashCode => Object.hash(builder, sdfFn, id);
+  int get hashCode => id != null ? id.hashCode : Object.hash(builder, sdfFn);
 }
 
 /// A closed polygon in absolute coordinates with an exact analytic SDF.
