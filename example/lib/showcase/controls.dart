@@ -102,7 +102,7 @@ class ControlsDrawer extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: 84,
+          width: ShowcaseTheme.sliderLabelWidth,
           child: Text(label, style: ShowcaseTheme.controlLabel),
         ),
         Expanded(
@@ -113,7 +113,7 @@ class ControlsDrawer extends StatelessWidget {
           ),
         ),
         SizedBox(
-          width: 40,
+          width: ShowcaseTheme.sliderValueWidth,
           child: Text(
             value.toStringAsFixed(1),
             style: ShowcaseTheme.controlLabel,

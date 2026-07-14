@@ -9,6 +9,8 @@ abstract final class ShowcaseTheme {
   static const double dotSize = 8;
   static const double dotActiveWidth = 18;
   static const double dotGap = 3;
+  static const double sliderLabelWidth = 84;
+  static const double sliderValueWidth = 40;
 
   // Specimen sizing.
   /// Specimen box side, as a fraction of the screen's shortest side.
