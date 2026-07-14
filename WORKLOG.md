@@ -1,5 +1,18 @@
 # Worklog
 
+## 2026-07-14 — Example showcase gallery (tooling for the visual-fix sessions)
+
+- Rebuilt `example/` as a swipeable specimen gallery: 5 registry shapes (rounded
+  rect, circle, squircle, seeded harmonic blob, concave star) + nav-bar fixture +
+  animation page, one per screen, registry-driven (`showcase/specimen.dart`).
+- Shared chrome: 3 switchable backdrops (gradient / plain-light / auto-scrolling
+  cards), material chips, collapsible optics slider drawer with live values (for
+  on-device preset re-tuning after the dpr fix), header check-notes per page.
+- Nav-bar page toggles separate widgets vs `bar.union(circle)` — the A/B for
+  WORKLOG issue 4. Animation page: material tween + drift (grain anchoring check).
+- All showcase state in one root StatefulWidget; example got `flutter_test` and
+  its own widget-test suite (22 tests).
+
 ## 2026-07-13 — On-device status + open issues (branch folded into main here)
 
 Verified on the Pixel: bar/FAB curves are smooth (jaggies fix works), rim + FAB-hole edge read as

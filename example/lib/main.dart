@@ -16,9 +16,9 @@ class GlassGalleryApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: ShowcasePage(),
-      );
+    debugShowCheckedModeBanner: false,
+    home: ShowcasePage(),
+  );
 }
 
 /// The gallery: a page per specimen over a switchable backdrop, with shared
@@ -85,8 +85,10 @@ class _ShowcasePageState extends State<ShowcasePage> {
       presetIndex: _animPresetIndex,
       driftEnabled: _driftEnabled,
       driftRight: _driftRight,
-      onTapGlass: () => setState(() =>
-          _animPresetIndex = (_animPresetIndex + 1) % showcasePresets.length),
+      onTapGlass: () => setState(
+        () =>
+            _animPresetIndex = (_animPresetIndex + 1) % showcasePresets.length,
+      ),
       onDriftToggled: (v) => setState(() {
         _driftEnabled = v;
         _driftRight = v;
@@ -160,7 +162,11 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(
-          ShowcaseTheme.pad, ShowcaseTheme.pad, ShowcaseTheme.pad, 0),
+        ShowcaseTheme.pad,
+        ShowcaseTheme.pad,
+        ShowcaseTheme.pad,
+        0,
+      ),
       padding: const EdgeInsets.all(ShowcaseTheme.gap),
       decoration: BoxDecoration(
         color: ShowcaseTheme.chromeBg,
@@ -200,7 +206,9 @@ class _PageDots extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(top: ShowcaseTheme.gap),
       padding: const EdgeInsets.symmetric(
-          horizontal: ShowcaseTheme.gap, vertical: ShowcaseTheme.dotGap),
+        horizontal: ShowcaseTheme.gap,
+        vertical: ShowcaseTheme.dotGap,
+      ),
       decoration: BoxDecoration(
         color: ShowcaseTheme.chromeBg,
         borderRadius: BorderRadius.circular(ShowcaseTheme.dotSize),
@@ -211,16 +219,18 @@ class _PageDots extends StatelessWidget {
           for (var i = 0; i < count; i++)
             AnimatedContainer(
               duration: ShowcaseTheme.materialTween,
-              margin:
-                  const EdgeInsets.symmetric(horizontal: ShowcaseTheme.dotGap),
+              margin: const EdgeInsets.symmetric(
+                horizontal: ShowcaseTheme.dotGap,
+              ),
               width: i == index
                   ? ShowcaseTheme.dotActiveWidth
                   : ShowcaseTheme.dotSize,
               height: ShowcaseTheme.dotSize,
               decoration: BoxDecoration(
-                color: i == index ? ShowcaseTheme.dotActive : ShowcaseTheme.dotInactive,
-                borderRadius:
-                    BorderRadius.circular(ShowcaseTheme.dotSize / 2),
+                color: i == index
+                    ? ShowcaseTheme.dotActive
+                    : ShowcaseTheme.dotInactive,
+                borderRadius: BorderRadius.circular(ShowcaseTheme.dotSize / 2),
               ),
             ),
         ],
