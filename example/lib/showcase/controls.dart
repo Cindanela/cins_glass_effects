@@ -36,7 +36,11 @@ class ControlsDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(
-        ShowcaseTheme.pad, 0, ShowcaseTheme.pad, ShowcaseTheme.pad),
+        ShowcaseTheme.pad,
+        0,
+        ShowcaseTheme.pad,
+        ShowcaseTheme.pad,
+      ),
       padding: const EdgeInsets.all(ShowcaseTheme.gap),
       decoration: BoxDecoration(
         color: ShowcaseTheme.chromeBg,
@@ -69,20 +73,45 @@ class ControlsDrawer extends StatelessWidget {
             ],
           ),
           if (expanded) ...[
-            _slider('edge width', material.edgeWidth, 40,
-                (v) => onMaterialChanged(material.copyWith(edgeWidth: v))),
-            _slider('refraction', material.refraction, 30,
-                (v) => onMaterialChanged(material.copyWith(refraction: v))),
-            _slider('aberration', material.chromaticAberration, 8,
-                (v) => onMaterialChanged(
-                    material.copyWith(chromaticAberration: v))),
-            _slider('blur', material.blurSigma, 20,
-                (v) => onMaterialChanged(material.copyWith(blurSigma: v))),
-            _slider('grain', material.grain, 1,
-                (v) => onMaterialChanged(material.copyWith(grain: v))),
-            _slider('tint alpha', material.tint.a, 0.4,
-                (v) => onMaterialChanged(material.copyWith(
-                    tint: material.tint.withValues(alpha: v)))),
+            _slider(
+              'edge width',
+              material.edgeWidth,
+              40,
+              (v) => onMaterialChanged(material.copyWith(edgeWidth: v)),
+            ),
+            _slider(
+              'refraction',
+              material.refraction,
+              30,
+              (v) => onMaterialChanged(material.copyWith(refraction: v)),
+            ),
+            _slider(
+              'aberration',
+              material.chromaticAberration,
+              8,
+              (v) =>
+                  onMaterialChanged(material.copyWith(chromaticAberration: v)),
+            ),
+            _slider(
+              'blur',
+              material.blurSigma,
+              20,
+              (v) => onMaterialChanged(material.copyWith(blurSigma: v)),
+            ),
+            _slider(
+              'grain',
+              material.grain,
+              1,
+              (v) => onMaterialChanged(material.copyWith(grain: v)),
+            ),
+            _slider(
+              'tint alpha',
+              material.tint.a,
+              0.4,
+              (v) => onMaterialChanged(
+                material.copyWith(tint: material.tint.withValues(alpha: v)),
+              ),
+            ),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -98,7 +127,11 @@ class ControlsDrawer extends StatelessWidget {
   }
 
   Widget _slider(
-      String label, double value, double max, ValueChanged<double> onChanged) {
+    String label,
+    double value,
+    double max,
+    ValueChanged<double> onChanged,
+  ) {
     return Row(
       children: [
         SizedBox(
@@ -115,7 +148,7 @@ class ControlsDrawer extends StatelessWidget {
         SizedBox(
           width: ShowcaseTheme.sliderValueWidth,
           child: Text(
-            value.toStringAsFixed(1),
+            value.toStringAsFixed(max <= 1 ? 2 : 1),
             style: ShowcaseTheme.controlLabel,
             textAlign: TextAlign.right,
           ),

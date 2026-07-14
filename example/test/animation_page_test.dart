@@ -11,28 +11,35 @@ void main() {
     VoidCallback? onTap,
     ValueChanged<bool>? onDrift,
   }) {
-    return tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: AnimationPage(
-          presetIndex: presetIndex,
-          driftEnabled: driftEnabled,
-          driftRight: false,
-          onTapGlass: onTap ?? () {},
-          onDriftToggled: onDrift ?? (_) {},
-          onDriftLegComplete: () {},
+    return tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AnimationPage(
+            presetIndex: presetIndex,
+            driftEnabled: driftEnabled,
+            driftRight: false,
+            onTapGlass: onTap ?? () {},
+            onDriftToggled: onDrift ?? (_) {},
+            onDriftLegComplete: () {},
+          ),
         ),
       ),
-    ));
+    );
   }
 
-  testWidgets('material follows presetIndex and tap invokes callback',
-      (tester) async {
+  testWidgets('material follows presetIndex and tap invokes callback', (
+    tester,
+  ) async {
     var taps = 0;
     await pump(tester, presetIndex: 1, onTap: () => taps++);
-    final agc = tester
-        .widget<AnimatedGlassContainer>(find.byType(AnimatedGlassContainer));
+    final agc = tester.widget<AnimatedGlassContainer>(
+      find.byType(AnimatedGlassContainer),
+    );
     expect(agc.material, GlassMaterials.frosted);
-    await tester.tap(find.byType(AnimatedGlassContainer));
+    await tester.tapAt(
+      tester.getTopLeft(find.byType(AnimatedGlassContainer)) +
+          const Offset(10, 10),
+    );
     expect(taps, 1);
   });
 

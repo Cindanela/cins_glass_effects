@@ -29,7 +29,9 @@ class SpecimenPage extends StatelessWidget {
           child: SizedBox.fromSize(
             size: size,
             child: Listener(
-              onPointerHover: (e) => pointerLight?.update(e.localPosition, size),
+              behavior: HitTestBehavior.opaque,
+              onPointerHover: (e) =>
+                  pointerLight?.update(e.localPosition, size),
               onPointerMove: (e) => pointerLight?.update(e.localPosition, size),
               child: GlassContainer(
                 material: material,

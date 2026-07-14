@@ -41,12 +41,13 @@ class AnimationPage extends StatelessWidget {
                 alignment: !driftEnabled
                     ? Alignment.center
                     : (driftRight
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft),
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft),
                 duration: ShowcaseTheme.driftPeriod,
                 onEnd: onDriftLegComplete,
                 child: GestureDetector(
                   onTap: onTapGlass,
+                  behavior: HitTestBehavior.opaque,
                   child: SizedBox(
                     width: ShowcaseTheme.animGlassSide,
                     height: ShowcaseTheme.animGlassSide,
@@ -68,8 +69,9 @@ class AnimationPage extends StatelessWidget {
             ),
           ),
           Padding(
-            padding:
-                const EdgeInsets.only(bottom: ShowcaseTheme.pageBottomInset),
+            padding: const EdgeInsets.only(
+              bottom: ShowcaseTheme.pageBottomInset,
+            ),
             child: FilterChip(
               label: const Text('Drift'),
               selected: driftEnabled,
