@@ -28,6 +28,8 @@ abstract final class ShowcaseTheme {
   // Chrome colors / text.
   static const Color chromeBg = Color(0x73000000);
   static const Color chromeFg = Colors.white;
+  static const Color dotActive = Colors.white;
+  static const Color dotInactive = Colors.white38;
   static const TextStyle headerTitle = TextStyle(
     color: Colors.white,
     fontSize: 16,

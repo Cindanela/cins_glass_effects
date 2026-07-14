@@ -218,7 +218,7 @@ class _PageDots extends StatelessWidget {
                   : ShowcaseTheme.dotSize,
               height: ShowcaseTheme.dotSize,
               decoration: BoxDecoration(
-                color: i == index ? Colors.white : Colors.white38,
+                color: i == index ? ShowcaseTheme.dotActive : ShowcaseTheme.dotInactive,
                 borderRadius:
                     BorderRadius.circular(ShowcaseTheme.dotSize / 2),
               ),
